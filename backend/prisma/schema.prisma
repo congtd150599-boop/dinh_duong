@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Patient {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // raw inputs
+  name      String
+  dob       DateTime
+  examDate  DateTime
+  gender    String // 'Nam' | 'Nữ' — validated via zod at the API boundary, not a Postgres enum
+  weight    Float
+  height    Float
+  muac      Float?
+  revisit   DateTime?
+  tuvan     String // 'Có' | 'Không'
+
+  // raw optional lab inputs
+  labCa        Float?
+  labVitD      Float?
+  labZn        Float?
+  labHb        Float?
+  labFe        Float?
+  labFerritin  Float?
+  labChol      Float?
+  labTg        Float?
+
+  // denormalized computed summary (fast list/CSV rendering without recompute)
+  months               Int
+  bmi                  Float
+  wfa                  String
+  hfa                  String
+  wfh                  String
+  muacStatus           String?
+  stdEnergy            Int
+  targetEnergy         Int
+  carbG                Int
+  proteinG             Int
+  lipidG               Int
+  labAssessmentSummary String // comma-joined non-ok diagnoses, default 'Bình thường'
+
+  // full computed result frozen at save time (audit/history — see plan notes)
+  fullResult Json
+
+  @@index([examDate])
+  @@index([name])
+}
+
+// Growth-reference median lookup (WFA/HFA), separated from code so it can be
+// re-imported later (e.g. when WHO revises a standard) without a deploy.
+// A bundled CSV default (backend/src/data/growth-standards-who-default.csv)
+// seeds this table on first run; importing a new CSV replaces it.
+model GrowthStandardPoint {
+  id       String   @id @default(cuid())
+  gender   String // 'Nam' | 'Nữ'
+  metric   String // 'WFA' | 'HFA'
+  months   Int
+  median   Float
+  source   String // free-text citation, e.g. "WHO Child Growth Standards 2006"
+  importedAt DateTime @default(now())
+
+  @@unique([gender, metric, months])
+}

@@ -1,0 +1,44 @@
+name: dinhduong-prod
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dinhduong}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dinhduong_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-dinhduong}
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dinhduong}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://dinhduong:dinhduong_dev_password@postgres:5432/dinhduong?schema=public}
+      PORT: 4000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # No bind mounts, no host port mapping — only the frontend's Nginx
+    # (proxying /api/) and other containers on this network can reach it.
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata_prod:

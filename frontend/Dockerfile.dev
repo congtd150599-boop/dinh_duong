@@ -1,0 +1,18 @@
+# Build context is the REPO ROOT (see docker-compose.dev.yml: context: .., dockerfile: frontend/Dockerfile.dev)
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package.json ./
+COPY frontend/package.json ./frontend/package.json
+COPY packages/shared/package.json ./packages/shared/package.json
+RUN npm install --workspace=frontend --include-workspace-root
+
+COPY frontend ./frontend
+COPY packages/shared ./packages/shared
+
+WORKDIR /app/frontend
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev"]

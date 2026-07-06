@@ -1,0 +1,23 @@
+# Build context is the REPO ROOT (see docker-compose.dev.yml: context: .., dockerfile: backend/Dockerfile.dev)
+# so that npm workspaces can resolve across backend/ and packages/shared/.
+FROM node:20-alpine
+
+# Prisma's query/schema engine binaries need OpenSSL present on Alpine.
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+# Copy full source (not just package.json) before `npm install` — the backend's
+# "postinstall": "prisma generate" script needs prisma/schema.prisma to already
+# be present, which sacrifices a bit of layer-caching but keeps the image build
+# correct. Dev iteration speed comes from the bind-mount + volume, not this cache.
+COPY package.json ./
+COPY backend ./backend
+COPY packages/shared ./packages/shared
+RUN npm install --workspace=backend --include-workspace-root
+
+WORKDIR /app/backend
+
+EXPOSE 4000
+
+CMD ["npm", "run", "dev"]

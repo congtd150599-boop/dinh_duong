@@ -1,0 +1,68 @@
+name: dinhduong-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dinhduong}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dinhduong_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-dinhduong}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dinhduong}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile.dev
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://dinhduong:dinhduong_dev_password@postgres:5432/dinhduong?schema=public}
+      DATABASE_URL_TEST: ${DATABASE_URL_TEST:-postgresql://dinhduong:dinhduong_dev_password@postgres:5432/dinhduong_test?schema=public}
+      PORT: 4000
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../backend:/app/backend
+      - ../packages/shared:/app/packages/shared
+      - backend_node_modules:/app/backend/node_modules
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile.dev
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:4000/api}
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ../frontend:/app/frontend
+      - ../packages/shared:/app/packages/shared
+      - frontend_node_modules:/app/frontend/node_modules
+
+  adminer:
+    image: adminer:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+volumes:
+  pgdata:
+  backend_node_modules:
+  frontend_node_modules:

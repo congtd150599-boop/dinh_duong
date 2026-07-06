@@ -1,0 +1,7 @@
+{
+  "watch": ["src"],
+  "ext": "ts,json",
+  "exec": "ts-node --transpile-only src/server.ts",
+  "legacyWatch": true,
+  "delay": "300"
+}

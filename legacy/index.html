@@ -1,0 +1,3201 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đánh Giá Dinh Dưỡng Nhi Khoa | Viện Dinh Dưỡng</title>
+<meta name="description" content="Hệ thống đánh giá dinh dưỡng nhi khoa theo tiêu chuẩn WHO - tính toán tình trạng dinh dưỡng, nhu cầu năng lượng và thực đơn phù hợp theo lứa tuổi">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+:root {
+  --primary: #00796B;
+  --primary-dark: #004D40;
+  --primary-light: #B2DFDB;
+  --accent: #FF6F00;
+  --accent-light: #FFE0B2;
+  --danger: #C62828;
+  --danger-light: #FFCDD2;
+  --warning: #F57F17;
+  --warning-light: #FFF8E1;
+  --success: #2E7D32;
+  --success-light: #E8F5E9;
+  --info: #0277BD;
+  --info-light: #E1F5FE;
+  --surface: #FAFAFA;
+  --surface-2: #F0F4F3;
+  --card: #FFFFFF;
+  --border: #E0E0E0;
+  --text-primary: #212121;
+  --text-secondary: #616161;
+  --text-muted: #9E9E9E;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.12);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.16);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--surface);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+/* HEADER */
+.app-header {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 60%, #00897B 100%);
+  color: white;
+  padding: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-md);
+}
+.header-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.header-logo {
+  width: 48px; height: 48px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
+}
+.header-title { flex: 1; }
+.header-title h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+.header-title p {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-top: 2px;
+}
+.header-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 4px;
+}
+.tab-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.tab-btn.active {
+  background: white;
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+.tab-btn:hover:not(.active) {
+  background: rgba(255,255,255,0.15);
+  color: white;
+}
+
+/* MAIN LAYOUT */
+.main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* TABS CONTENT */
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* GRID */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+/* CARDS */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.card-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.card-header .icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.card-body { padding: 20px; }
+
+/* SECTION HEADERS */
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* FORM ELEMENTS */
+.form-group { margin-bottom: 16px; }
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  letter-spacing: 0.2px;
+}
+.form-label .required { color: var(--danger); margin-left: 2px; }
+.form-control {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: white;
+  transition: all 0.2s;
+  outline: none;
+}
+.form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0,121,107,0.12);
+}
+.form-control::placeholder { color: var(--text-muted); }
+.form-control.computed {
+  background: var(--surface-2);
+  color: var(--primary-dark);
+  font-weight: 600;
+  cursor: default;
+}
+.form-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* SEGMENTED CONTROL */
+.seg-control {
+  display: flex;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.seg-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: white;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  border-right: 1px solid var(--border);
+}
+.seg-btn:last-child { border-right: none; }
+.seg-btn.active {
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+}
+
+/* BADGES */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+.badge-normal { background: var(--success-light); color: var(--success); }
+.badge-warn { background: var(--warning-light); color: var(--warning); }
+.badge-danger { background: var(--danger-light); color: var(--danger); }
+.badge-info { background: var(--info-light); color: var(--info); }
+.badge-obesity { background: #FBE9E7; color: #BF360C; }
+
+/* BIG ACTION BUTTON */
+.btn-primary {
+  width: 100%;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+  box-shadow: 0 4px 15px rgba(0,121,107,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0,121,107,0.45);
+}
+.btn-primary:active { transform: translateY(0); }
+
+.btn-secondary {
+  padding: 10px 20px;
+  background: white;
+  color: var(--primary);
+  border: 1.5px solid var(--primary);
+  border-radius: var(--radius-sm);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-secondary:hover { background: var(--primary-light); }
+
+.btn-danger {
+  padding: 8px 16px;
+  background: white;
+  color: var(--danger);
+  border: 1.5px solid var(--danger);
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-danger:hover { background: var(--danger-light); }
+
+/* RESULT DASHBOARD */
+.result-hero {
+  background: linear-gradient(135deg, var(--primary-dark) 0%, #00695C 100%);
+  border-radius: var(--radius);
+  padding: 24px;
+  color: white;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.result-hero::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+}
+.result-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -60px; right: 40px;
+  width: 150px; height: 150px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+}
+.result-hero-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.result-hero-meta {
+  font-size: 13px;
+  opacity: 0.8;
+  margin-bottom: 20px;
+}
+.result-hero-stats {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.hero-stat {
+  text-align: center;
+}
+.hero-stat .val {
+  font-family: 'Outfit', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1;
+}
+.hero-stat .lbl {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.hero-divider {
+  width: 1px;
+  background: rgba(255,255,255,0.2);
+  align-self: stretch;
+}
+
+/* METRIC CARDS */
+.metric-card {
+  background: white;
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 4px; height: 100%;
+}
+.metric-card.normal::before { background: var(--success); }
+.metric-card.warning::before { background: var(--warning); }
+.metric-card.danger::before { background: var(--danger); }
+.metric-card.info::before { background: var(--info); }
+.metric-card.obesity::before { background: #FF5722; }
+
+.metric-label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.metric-value { font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 700; margin: 4px 0; }
+.metric-sub { font-size: 12px; color: var(--text-secondary); }
+
+/* PROGRESS BAR */
+.progress-wrap { margin: 8px 0; }
+.progress-bar {
+  height: 8px;
+  background: var(--surface-2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+/* TABLE */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.data-table th {
+  background: var(--surface-2);
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+}
+.data-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--surface-2); }
+.data-table .val-ok { color: var(--success); font-weight: 600; }
+.data-table .val-low { color: var(--danger); font-weight: 600; }
+.data-table .val-high { color: var(--warning); font-weight: 600; }
+
+/* MENU TABLE */
+.menu-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.menu-table th {
+  background: var(--primary-dark);
+  color: white;
+  padding: 10px 12px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 11px;
+}
+.menu-table th:first-child { text-align: left; }
+.menu-table td {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  vertical-align: top;
+  line-height: 1.5;
+}
+.menu-table tr:nth-child(even) td { background: var(--surface-2); }
+.menu-table .meal-label {
+  font-weight: 700;
+  color: var(--primary-dark);
+  background: var(--primary-light);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+/* PATIENT LOG */
+.log-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-muted);
+}
+.log-empty .icon { font-size: 48px; margin-bottom: 12px; }
+
+/* MICRONUTRIENT PANEL */
+.micro-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  transition: all 0.2s;
+}
+.micro-item.deficit { border-color: var(--danger); background: var(--danger-light); }
+.micro-item.excess { border-color: var(--warning); background: var(--warning-light); }
+.micro-item.ok { border-color: var(--success); background: var(--success-light); }
+.micro-icon { font-size: 20px; flex-shrink: 0; }
+.micro-info { flex: 1; }
+.micro-name { font-weight: 600; font-size: 13px; }
+.micro-detail { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+.micro-rec { font-size: 11px; color: var(--text-primary); margin-top: 4px; line-height: 1.5; }
+.micro-val { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 700; flex-shrink: 0; }
+
+/* ENERGY CHART */
+.macro-chart { display: flex; height: 20px; border-radius: 10px; overflow: hidden; margin: 12px 0; }
+.macro-seg { display: flex; align-items: center; justify-content: center; font-size: 10px; color: white; font-weight: 700; transition: flex 0.5s; }
+
+/* PRINT */
+@media print {
+  .app-header, .tab-btn, .btn-primary, .btn-secondary { display: none !important; }
+  .main { padding: 0; }
+}
+
+/* PDF EXPORT STYLES */
+#pdf-template {
+  display: none;
+  font-family: 'Inter', Arial, sans-serif;
+  color: #212121;
+  background: white;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.pdf-page {
+  width: 210mm;
+  padding: 14mm 14mm 12mm 14mm;
+  background: white;
+}
+.pdf-header {
+  background: linear-gradient(135deg, #004D40 0%, #00796B 100%);
+  color: white;
+  padding: 16px 20px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.pdf-header-logo {
+  width: 48px; height: 48px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.pdf-header-title { flex:1; }
+.pdf-header-title h1 { font-size: 16px; font-weight: 700; margin-bottom: 3px; }
+.pdf-header-title p { font-size: 10px; opacity: 0.8; }
+.pdf-header-date { text-align: right; font-size: 10px; opacity: 0.8; }
+.pdf-patient-band {
+  background: #F0F4F3;
+  border-left: 4px solid #00796B;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 8px;
+}
+.pdf-patient-band .pf { }
+.pdf-patient-band .pf-label { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #666; letter-spacing: 0.5px; }
+.pdf-patient-band .pf-value { font-size: 13px; font-weight: 700; color: #004D40; }
+.pdf-section {
+  margin-bottom: 14px;
+}
+.pdf-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #004D40;
+  border-bottom: 2px solid #004D40;
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pdf-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.pdf-grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.pdf-grid4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; }
+.pdf-stat-box {
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #FAFAFA;
+}
+.pdf-stat-box.teal { border-color: #00796B; background: #E8F5E9; }
+.pdf-stat-box.red { border-color: #C62828; background: #FFCDD2; }
+.pdf-stat-box.orange { border-color: #F57F17; background: #FFF8E1; }
+.pdf-stat-box.blue { border-color: #0277BD; background: #E1F5FE; }
+.pdf-stat-label { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #666; }
+.pdf-stat-value { font-size: 20px; font-weight: 800; color: #004D40; line-height: 1.1; }
+.pdf-stat-sub { font-size: 10px; color: #616161; }
+.pdf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+  margin-bottom: 10px;
+}
+.pdf-table th {
+  background: #004D40;
+  color: white;
+  padding: 7px 10px;
+  text-align: left;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.pdf-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #E0E0E0;
+  vertical-align: middle;
+}
+.pdf-table tr:nth-child(even) td { background: #F5F5F5; }
+.pdf-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 9px;
+  font-weight: 700;
+}
+.pdf-badge-ok { background: #E8F5E9; color: #2E7D32; }
+.pdf-badge-warn { background: #FFF8E1; color: #F57F17; }
+.pdf-badge-bad { background: #FFCDD2; color: #C62828; }
+.pdf-macro-bar {
+  height: 16px;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  margin: 6px 0;
+}
+.pdf-macro-seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  color: white;
+  font-weight: 700;
+}
+.pdf-menu-table { width: 100%; border-collapse: collapse; font-size: 9px; }
+.pdf-menu-table th {
+  background: #004D40;
+  color: white;
+  padding: 6px 8px;
+  font-size: 9px;
+  font-weight: 600;
+  text-align: center;
+  border: 1px solid #003D30;
+}
+.pdf-menu-table th:first-child { text-align: left; }
+.pdf-menu-table td {
+  padding: 6px 8px;
+  border: 1px solid #E0E0E0;
+  vertical-align: top;
+  line-height: 1.4;
+}
+.pdf-menu-table tr:nth-child(even) td { background: #F5F5F5; }
+.pdf-menu-table .meal-hdr {
+  font-weight: 700;
+  color: #004D40;
+  background: #B2DFDB;
+  text-transform: uppercase;
+  font-size: 8px;
+}
+.pdf-lab-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  margin-bottom: 5px;
+  border-left: 3px solid #E0E0E0;
+}
+.pdf-lab-item.ok { border-color: #2E7D32; background: #F1F8E9; }
+.pdf-lab-item.bad { border-color: #C62828; background: #FFF8F8; }
+.pdf-lab-item.excess { border-color: #F57F17; background: #FFFDE7; }
+.pdf-lab-name { font-weight: 700; font-size: 10px; }
+.pdf-lab-val { font-size: 13px; font-weight: 800; margin-left: auto; flex-shrink: 0; }
+.pdf-footer {
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid #E0E0E0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #9E9E9E;
+}
+.pdf-watermark {
+  text-align: center;
+  font-size: 9px;
+  color: #BDBDBD;
+  margin-top: 8px;
+}
+.btn-pdf {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #C62828 0%, #E53935 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 3px 12px rgba(198,40,40,0.35);
+}
+.btn-pdf:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 18px rgba(198,40,40,0.45);
+}
+.pdf-generating {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  backdrop-filter: blur(4px);
+}
+.pdf-generating-box {
+  background: white;
+  border-radius: 16px;
+  padding: 32px 40px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.pdf-spinner {
+  width: 48px; height: 48px;
+  border: 4px solid #E0E0E0;
+  border-top-color: #00796B;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr; }
+  .header-tabs { display: none; }
+}
+
+/* ANIMATIONS */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeIn 0.4s ease forwards; }
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* NOTIFICATION TOAST */
+.toast {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  background: var(--primary-dark);
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  z-index: 9999;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.3s ease;
+  max-width: 360px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.error { background: var(--danger); }
+.toast.success { background: var(--success); }
+
+/* DIVIDER */
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+/* EMPTY STATE */
+.result-empty {
+  text-align: center;
+  padding: 80px 24px;
+  color: var(--text-muted);
+}
+.result-empty .big-icon { font-size: 64px; margin-bottom: 16px; }
+.result-empty h3 { font-size: 18px; color: var(--text-secondary); margin-bottom: 8px; }
+.result-empty p { font-size: 14px; }
+
+/* TITLE TAGS */
+.section-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* WHO standard comparison */
+.compare-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.compare-row:last-child { border-bottom: none; }
+.compare-label { width: 120px; font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+.compare-current { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 700; color: var(--text-primary); min-width: 70px; }
+.compare-unit { font-size: 12px; color: var(--text-muted); }
+.compare-arrow { font-size: 18px; color: var(--text-muted); }
+.compare-target { font-size: 14px; color: var(--text-secondary); min-width: 60px; }
+.compare-diff { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+.diff-low { background: var(--danger-light); color: var(--danger); }
+.diff-ok { background: var(--success-light); color: var(--success); }
+.diff-high { background: var(--warning-light); color: var(--warning); }
+
+/* Quick info box */
+.info-box {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+}
+.info-box.info { background: var(--info-light); border-left: 3px solid var(--info); }
+.info-box.warn { background: var(--warning-light); border-left: 3px solid var(--warning); }
+.info-box.danger { background: var(--danger-light); border-left: 3px solid var(--danger); }
+.info-box.success { background: var(--success-light); border-left: 3px solid var(--success); }
+.info-box p { font-size: 12.5px; line-height: 1.6; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="header-inner">
+    <div class="header-logo">🏥</div>
+    <div class="header-title">
+      <h1>Đánh Giá Dinh Dưỡng Nhi Khoa</h1>
+      <p>Tiêu chuẩn WHO 2006/2007 · Quyết định 3777/QĐ-BYT-2024</p>
+    </div>
+    <div class="header-tabs">
+      <button class="tab-btn active" onclick="switchTab('input')">📋 Nhập Liệu</button>
+      <button class="tab-btn" onclick="switchTab('result')">📊 Kết Quả</button>
+      <button class="tab-btn" onclick="switchTab('log')">📁 Nhật Ký BN</button>
+    </div>
+  </div>
+</header>
+
+<!-- TOAST -->
+<div id="toast" class="toast"></div>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- ===== TAB 1: INPUT ===== -->
+<div id="tab-input" class="tab-content active">
+<div class="grid-2" style="gap:24px; align-items:start;">
+
+  <!-- LEFT: PATIENT INFO -->
+  <div style="display:flex;flex-direction:column;gap:20px;">
+
+    <!-- A. THÔNG TIN BỆNH NHÂN -->
+    <div class="card">
+      <div class="card-header">
+        <div class="icon" style="background:#E8F5E9;">👤</div>
+        <h3>A. Thông Tin Bệnh Nhân</h3>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label class="form-label">Họ và tên<span class="required">*</span></label>
+          <input type="text" id="inp_name" class="form-control" placeholder="Nguyễn Văn A" oninput="autoCalc()">
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Ngày sinh<span class="required">*</span></label>
+            <input type="date" id="inp_dob" class="form-control" onchange="autoCalc()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ngày khám<span class="required">*</span></label>
+            <input type="date" id="inp_exam_date" class="form-control" onchange="autoCalc()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tuổi (tự động tính)</label>
+          <input type="text" id="out_age" class="form-control computed" readonly placeholder="Nhập ngày sinh và ngày khám...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Giới tính<span class="required">*</span></label>
+          <div class="seg-control">
+            <button class="seg-btn active" id="btn_nam" onclick="setGender('Nam')">♂ Nam</button>
+            <button class="seg-btn" id="btn_nu" onclick="setGender('Nữ')">♀ Nữ</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ngày tái khám</label>
+          <input type="date" id="inp_revisit" class="form-control">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tư vấn dinh dưỡng</label>
+          <div class="seg-control">
+            <button class="seg-btn active" id="btn_tuvan_co" onclick="setTuVan('Có')">✅ Có</button>
+            <button class="seg-btn" id="btn_tuvan_khong" onclick="setTuVan('Không')">❌ Không</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- B. CHỈ SỐ NHÂN TRẮC -->
+    <div class="card">
+      <div class="card-header">
+        <div class="icon" style="background:#E3F2FD;">📏</div>
+        <h3>B. Chỉ Số Nhân Trắc</h3>
+      </div>
+      <div class="card-body">
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Cân nặng (kg)<span class="required">*</span></label>
+            <input type="number" id="inp_weight" class="form-control" placeholder="VD: 15.5" step="0.1" oninput="autoCalc()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Chiều cao (cm)<span class="required">*</span></label>
+            <input type="number" id="inp_height" class="form-control" placeholder="VD: 95.0" step="0.1" oninput="autoCalc()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Vòng cánh tay (MUAC, cm)</label>
+          <input type="number" id="inp_muac" class="form-control" placeholder="VD: 13.5" step="0.1" oninput="autoCalc()">
+        </div>
+        <div class="divider" style="margin:12px 0;"></div>
+        <div class="grid-3">
+          <div class="form-group">
+            <label class="form-label">BMI</label>
+            <input type="text" id="out_bmi" class="form-control computed" readonly>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tuổi (tháng)</label>
+            <input type="text" id="out_months" class="form-control computed" readonly>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cân nặng/Tuổi</label>
+            <input type="text" id="out_wfa_status" class="form-control computed" readonly>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- H. XÉT NGHIỆM VI CHẤT -->
+    <div class="card">
+      <div class="card-header">
+        <div class="icon" style="background:#FFF8E1;">🧪</div>
+        <h3>H. Xét Nghiệm Vi Chất (Tùy chọn)</h3>
+      </div>
+      <div class="card-body">
+        <div class="info-box info" style="margin-bottom:16px;">
+          <span>ℹ️</span>
+          <p>Nhập kết quả xét nghiệm để hệ thống tự động đánh giá thiếu hụt vi chất và đề xuất bổ sung phù hợp.</p>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Calci toàn phần (mmol/L)</label>
+            <input type="number" id="inp_ca" class="form-control" placeholder="BT: 2.1–2.6" step="0.01">
+            <div class="form-hint">Bình thường: 2.1 – 2.6 mmol/L</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Vitamin D 25(OH)D (ng/mL)</label>
+            <input type="number" id="inp_vitd" class="form-control" placeholder="BT: >20" step="0.1">
+            <div class="form-hint">Thiếu nặng: &lt;12 | Thiếu nhẹ: 12–20</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kẽm huyết thanh (µmol/L)</label>
+            <input type="number" id="inp_zn" class="form-control" placeholder="BT: >10.7" step="0.1">
+            <div class="form-hint">Bình thường: 10.7 – 20.0 µmol/L</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Hemoglobin Hb (g/L)</label>
+            <input type="number" id="inp_hb" class="form-control" placeholder="BT: 110–160" step="0.1">
+            <div class="form-hint">Ngưỡng thiếu máu theo tuổi</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sắt huyết thanh (µmol/L)</label>
+            <input type="number" id="inp_fe" class="form-control" placeholder="BT: 11–27" step="0.1">
+            <div class="form-hint">Bình thường: 11.0 – 27.0 µmol/L</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ferritin (ng/mL)</label>
+            <input type="number" id="inp_ferritin" class="form-control" placeholder="BT: >12" step="0.1">
+            <div class="form-hint">Trẻ ≤5t: &lt;12 | Trẻ &gt;5t: &lt;15</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cholesterol toàn phần (mg/dL)</label>
+            <input type="number" id="inp_chol" class="form-control" placeholder="BT: <170" step="0.1">
+            <div class="form-hint">Tăng: ≥200 mg/dL</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Triglycerid (mg/dL)</label>
+            <input type="number" id="inp_tg" class="form-control" placeholder="BT: <100" step="0.1">
+            <div class="form-hint">Trẻ &lt;10t: &lt;100 | Trẻ ≥10t: &lt;130</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end left -->
+
+  <!-- RIGHT: STATUS + ACTIONS -->
+  <div style="display:flex;flex-direction:column;gap:20px;">
+
+    <!-- LIVE PREVIEW -->
+    <div class="card" id="live-preview" style="border:2px solid var(--primary-light);">
+      <div class="card-header" style="background:linear-gradient(135deg,var(--primary-dark),var(--primary));color:white;border-bottom:none;">
+        <div class="icon" style="background:rgba(255,255,255,0.15);">⚡</div>
+        <h3 style="color:white;">Xem trước kết quả</h3>
+        <span style="margin-left:auto;font-size:11px;opacity:0.7;">Tự động cập nhật</span>
+      </div>
+      <div class="card-body" id="live-preview-body">
+        <div style="text-align:center;padding:24px;color:var(--text-muted);">
+          <div style="font-size:40px;margin-bottom:8px;">📋</div>
+          <p style="font-size:13px;">Nhập thông tin bệnh nhân để xem kết quả đánh giá ngay lập tức</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHO GROWTH TARGETS -->
+    <div class="card">
+      <div class="card-header">
+        <div class="icon" style="background:#E8EAF6;">📈</div>
+        <h3>So Sánh Chuẩn WHO</h3>
+      </div>
+      <div class="card-body" id="who-compare-body">
+        <div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px;">
+          Nhập đầy đủ thông tin để so sánh với chuẩn WHO
+        </div>
+      </div>
+    </div>
+
+    <!-- ENERGY & MACRO -->
+    <div class="card">
+      <div class="card-header">
+        <div class="icon" style="background:#FFF3E0;">⚡</div>
+        <h3>Nhu Cầu Năng Lượng</h3>
+      </div>
+      <div class="card-body" id="energy-body">
+        <div style="text-align:center;padding:16px;color:var(--text-muted);font-size:13px;">
+          Năng lượng sẽ được tính toán tự động theo tuổi và tình trạng
+        </div>
+      </div>
+    </div>
+
+    <!-- SAVE BUTTON -->
+    <button class="btn-primary" onclick="savePatient()" style="font-size:16px;padding:16px;">
+      💾 Lưu Hồ Sơ & Ghi Nhật Ký
+    </button>
+    <button class="btn-secondary" onclick="viewResult()" style="text-align:center;">
+      📊 Xem Báo Cáo Chi Tiết →
+    </button>
+
+  </div><!-- end right -->
+</div>
+</div><!-- end tab-input -->
+
+<!-- ===== TAB 2: RESULT ===== -->
+<div id="tab-result" class="tab-content">
+  <div id="result-container">
+    <div class="result-empty fade-in">
+      <div class="big-icon">📊</div>
+      <h3>Chưa có dữ liệu đánh giá</h3>
+      <p>Vui lòng nhập thông tin bệnh nhân ở tab <strong>Nhập Liệu</strong> và bấm <strong>"Xem Báo Cáo Chi Tiết"</strong></p>
+    </div>
+  </div>
+  <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;" id="result-actions">
+    <button class="btn-secondary" onclick="window.print()">🖨️ In báo cáo</button>
+    <button class="btn-pdf" onclick="exportPDF()">📄 Xuất PDF</button>
+    <button class="btn-primary" style="width:auto;padding:10px 24px;" onclick="savePatient()">💾 Lưu hồ sơ</button>
+  </div>
+
+<!-- PDF TEMPLATE (hidden) -->
+<div id="pdf-template"></div>
+<!-- PDF GENERATING OVERLAY -->
+<div id="pdf-overlay" class="pdf-generating" style="display:none;">
+  <div class="pdf-generating-box">
+    <div class="pdf-spinner"></div>
+    <h3 style="font-size:16px;font-weight:700;color:#004D40;margin-bottom:6px;">Đang tạo PDF...</h3>
+    <p style="font-size:13px;color:#616161;">Vui lòng chờ trong giây lát</p>
+  </div>
+</div>
+</div>
+
+<!-- ===== TAB 3: LOG ===== -->
+<div id="tab-log" class="tab-content">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+    <div>
+      <h2 style="font-family:'Outfit',sans-serif;font-size:20px;font-weight:700;color:var(--primary-dark);">📁 Nhật Ký Bệnh Nhân</h2>
+      <p style="font-size:13px;color:var(--text-muted);margin-top:4px;">Dữ liệu được lưu trữ trên trình duyệt này</p>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-secondary" onclick="exportCSV()">📥 Xuất CSV</button>
+      <button class="btn-danger" onclick="clearLog()">🗑️ Xoá tất cả</button>
+    </div>
+  </div>
+  <div class="card">
+    <div style="overflow-x:auto;">
+      <table class="data-table" id="log-table">
+        <thead>
+          <tr>
+            <th>STT</th>
+            <th>Ngày khám</th>
+            <th>Họ và tên</th>
+            <th>Tuổi</th>
+            <th>Giới</th>
+            <th>CN (kg)</th>
+            <th>CC (cm)</th>
+            <th>BMI</th>
+            <th>Tình trạng</th>
+            <th>NL chuẩn</th>
+            <th>NL cá nhân</th>
+            <th>Đánh giá vi chất</th>
+            <th>Ngày TK</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="log-tbody">
+          <tr>
+            <td colspan="14">
+              <div class="log-empty">
+                <div class="icon">📭</div>
+                <p>Chưa có hồ sơ nào được lưu.<br>Nhập liệu bệnh nhân và bấm <strong>Lưu Hồ Sơ</strong> để bắt đầu.</p>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ============================================================
+// DATA: WHO GROWTH STANDARDS (Median weight & height)
+// Boys: [months, weight_kg, height_cm]
+// ============================================================
+const WHO_BOYS_WFA = {
+  0:3.3,1:4.5,2:5.6,3:6.4,4:7.0,5:7.5,6:7.9,7:8.3,8:8.6,9:8.9,10:9.2,11:9.4,
+  12:9.6,13:9.9,14:10.1,15:10.3,16:10.5,17:10.7,18:10.9,19:11.1,20:11.3,21:11.5,
+  22:11.8,23:12.0,24:12.2,25:12.4,26:12.5,27:12.7,28:12.9,29:13.1,30:13.3,31:13.5,
+  32:13.7,33:13.8,34:14.0,35:14.2,36:14.3,37:14.5,38:14.7,39:14.9,40:15.1,41:15.2,
+  42:15.4,43:15.6,44:15.7,45:15.9,46:16.1,47:16.3,48:16.4,49:16.6,50:16.8,51:17.0,
+  52:17.2,53:17.3,54:17.5,55:17.7,56:17.9,57:18.1,58:18.3,59:18.5,60:18.7
+};
+const WHO_GIRLS_WFA = {
+  0:3.2,1:4.2,2:5.1,3:5.8,4:6.4,5:6.9,6:7.3,7:7.6,8:7.9,9:8.2,10:8.5,11:8.7,
+  12:8.9,13:9.2,14:9.4,15:9.6,16:9.8,17:10.0,18:10.2,19:10.4,20:10.6,21:10.9,
+  22:11.1,23:11.3,24:11.5,25:11.7,26:11.9,27:12.1,28:12.3,29:12.5,30:12.7,31:12.9,
+  32:13.1,33:13.3,34:13.5,35:13.7,36:13.9,37:14.0,38:14.2,39:14.4,40:14.6,41:14.8,
+  42:15.0,43:15.2,44:15.4,45:15.6,46:15.7,47:15.9,48:16.1,49:16.3,50:16.5,51:16.8,
+  52:17.0,53:17.2,54:17.4,55:17.6,56:17.9,57:18.1,58:18.3,59:18.5,60:18.7
+};
+const WHO_BOYS_HFA = {
+  0:49.9,1:54.7,2:58.4,3:61.4,4:63.9,5:65.9,6:67.6,7:69.2,8:70.6,9:72.0,10:73.3,11:74.5,
+  12:75.7,13:76.9,14:78.0,15:79.1,16:80.2,17:81.2,18:82.3,19:83.2,20:84.2,21:85.1,
+  22:86.0,23:86.9,24:87.8,25:88.7,26:89.6,27:90.4,28:91.2,29:92.0,30:92.9,31:93.7,
+  32:94.4,33:95.2,34:95.9,35:96.7,36:97.4,37:98.1,38:98.8,39:99.5,40:100.2,41:100.9,
+  42:101.6,43:102.3,44:102.9,45:103.6,46:104.2,47:104.9,48:105.5,49:106.2,50:106.8,51:107.4,
+  52:108.0,53:108.7,54:109.3,55:109.9,56:110.5,57:111.1,58:111.7,59:112.3,60:112.8,
+  61:113.5,62:114.1,63:114.7,64:115.3,65:115.9,66:116.5,67:117.0,68:117.6,69:118.2,70:118.7,
+  71:119.3,72:119.9,73:120.4,74:121.0,75:121.5,76:122.1,77:122.6,78:123.1,79:123.7,80:124.2,
+  81:124.7,82:125.2,83:125.8,84:126.3,85:126.8,86:127.3,87:127.8,88:128.3,89:128.8,90:129.3,
+  91:129.8,92:130.3,93:130.8,94:131.3,95:131.8,96:132.3,97:132.8,98:133.3,99:133.7,100:134.2,
+  101:134.7,102:135.2,103:135.6,104:136.1,105:136.6,106:137.0,107:137.5,108:138.0,109:138.4,110:138.9,
+  111:139.4,112:139.9,113:140.4,114:140.9,115:141.5,116:142.0,117:142.6,118:143.2,119:143.9,120:144.6,
+  121:145.2,122:145.8,123:146.4,124:147.0,125:147.6,126:148.2,127:148.8,128:149.4,129:149.9,130:150.5,
+  131:151.1,132:151.7,133:152.3,134:153.0,135:153.7,136:154.5,137:155.2,138:155.9,139:156.5,140:157.2,
+  141:157.8,142:158.5,143:159.1,144:159.7,145:160.3,146:160.8,147:161.4,148:161.9,149:162.4,150:162.9,
+  151:163.4,152:163.9,153:164.4,154:164.9,155:165.4,156:165.9,157:166.4,158:166.9,159:167.5,160:168.0,
+  161:168.6,162:169.2,163:169.9,164:170.5,165:171.0,166:171.5,167:172.0,168:172.5,169:172.9,170:173.3,
+  171:173.7,172:174.0,173:174.3,174:174.5,175:174.8,176:175.0,177:175.2,178:175.4,179:175.6,180:175.7,
+  181:175.9,182:176.0,183:176.1,184:176.2,185:176.3,186:176.4,187:176.4,188:176.5,189:176.5,190:176.5,
+  191:176.5,192:176.5,193:176.5,194:176.5,195:176.4,196:176.4,197:176.3,198:176.3,199:176.2,200:176.2,
+  201:176.1,202:176.0,203:175.9,204:175.8,205:175.7,206:175.6,207:175.5,208:175.4,209:175.3,210:175.2,
+  211:175.0,212:174.9,213:174.7,214:174.6,215:174.4,216:174.2,217:174.0,218:173.8,219:173.6,220:173.4,
+  221:173.2,222:173.0,223:172.7,224:172.5,225:172.2,226:172.0,227:171.7,228:171.4
+};
+const WHO_GIRLS_HFA = {
+  0:49.1,1:53.7,2:57.1,3:59.8,4:62.1,5:64.0,6:65.7,7:67.3,8:68.7,9:70.1,10:71.5,11:72.8,
+  12:74.0,13:75.2,14:76.4,15:77.5,16:78.6,17:79.7,18:80.7,19:81.7,20:82.7,21:83.7,
+  22:84.6,23:85.5,24:86.4,25:87.3,26:88.2,27:89.1,28:90.0,29:90.8,30:91.7,31:92.5,
+  32:93.3,33:94.1,34:95.0,35:95.8,36:96.6,37:97.4,38:98.2,39:99.0,40:99.7,41:100.5,
+  42:101.2,43:102.0,44:102.7,45:103.4,46:104.2,47:104.9,48:105.6,49:106.3,50:107.0,51:107.7,
+  52:108.4,53:109.1,54:109.7,55:110.4,56:111.1,57:111.7,58:112.4,59:113.0,60:113.7,
+  61:114.5,62:115.2,63:115.9,64:116.7,65:117.4,66:118.1,67:118.9,68:119.6,69:120.3,70:121.0,
+  71:121.8,72:122.5,73:123.2,74:123.9,75:124.6,76:125.3,77:126.0,78:126.7,79:127.4,80:128.1,
+  81:128.7,82:129.4,83:130.1,84:130.7,85:131.4,86:132.1,87:132.7,88:133.4,89:134.0,90:134.7,
+  91:135.3,92:135.9,93:136.5,94:137.2,95:137.8,96:138.4,97:139.0,98:139.6,99:140.2,100:140.8,
+  101:141.4,102:142.0,103:142.6,104:143.2,105:143.8,106:144.4,107:145.0,108:145.6,109:146.2,110:146.8,
+  111:147.5,112:148.2,113:148.9,114:149.6,115:150.3,116:151.0,117:151.7,118:152.4,119:153.1,120:153.8,
+  121:154.4,122:155.1,123:155.7,124:156.3,125:156.9,126:157.5,127:158.1,128:158.6,129:159.2,130:159.7,
+  131:160.3,132:160.8,133:161.3,134:161.8,135:162.3,136:162.7,137:163.2,138:163.6,139:164.0,140:164.4,
+  141:164.8,142:165.1,143:165.5,144:165.8,145:166.1,146:166.4,147:166.7,148:166.9,149:167.2,150:167.4,
+  151:167.6,152:167.8,153:168.0,154:168.2,155:168.3,156:168.5,157:168.6,158:168.7,159:168.8,160:168.9,
+  161:169.0,162:169.1,163:169.1,164:169.2,165:169.2,166:169.2,167:169.2,168:169.2,169:169.2,170:169.2,
+  171:169.2,172:169.1,173:169.1,174:169.0,175:169.0,176:168.9,177:168.8,178:168.7,179:168.6,180:168.5,
+  181:168.4,182:168.2,183:168.1,184:167.9,185:167.8,186:167.6,187:167.4,188:167.2,189:167.0,190:166.8,
+  191:166.6,192:166.4,193:166.2,194:165.9,195:165.7,196:165.5,197:165.2,198:165.0,199:164.7,200:164.5,
+  201:164.2,202:164.0,203:163.7,204:163.4,205:163.1,206:162.9,207:162.6,208:162.3,209:162.0,210:161.7,
+  211:161.4,212:161.1,213:160.8,214:160.5,215:160.2,216:159.9,217:159.6,218:159.2,219:158.9,220:158.6,
+  221:158.3,222:157.9,223:157.6,224:157.3,225:156.9,226:156.6,227:156.2,228:155.9
+};
+
+// Energy requirements by age bracket [minMonths, maxMonths, maleKcal, femaleKcal]
+const ENERGY_TABLE = [
+  [0,5,550,500],[6,11,700,650],[12,23,1000,950],[24,35,1200,1100],
+  [36,47,1300,1200],[48,59,1400,1300],[60,83,1500,1400],[84,107,1700,1550],
+  [108,131,2100,1900],[132,155,2400,2100],[156,179,2800,2300],[180,228,3000,2300]
+];
+
+// MENU DATA by age/status/meal
+const MENU_DATA = {
+  "6-12m_Bình thường": {
+    "Sáng": [
+      "Cháo gà xay nhuyễn 150ml",
+      "Cháo lợn băm rau ngót",
+      "Cháo lươn đồng cà rốt",
+      "Cháo tôm bí đỏ",
+      "Cháo chim câu hạt sen",
+      "Cháo cá chép cải bó xôi",
+      "Cháo bò khoai tây"
+    ],
+    "Phụ sáng": [
+      "Nước cam vắt 50ml",
+      "Chuối tiêu nghiền 50g",
+      "Đu đủ chín nghiền 50g",
+      "Nước ép táo 50ml",
+      "Xoài chín xay 50g",
+      "Sữa chua trẻ em 50g",
+      "Nước lê ép 50ml"
+    ],
+    "Trưa": [
+      "Cháo sườn sụn nấu nhừ",
+      "Cháo cá quả mồng tơi",
+      "Cháo cua đồng mướp",
+      "Cháo trứng ta cà chua",
+      "Cháo ếch đậu xanh",
+      "Cháo thịt nạc măng tây",
+      "Cháo ngao mồng tơi"
+    ],
+    "Phụ chiều": [
+      "Sữa mẹ/CT 100ml",
+      "Sữa chua 50g",
+      "Váng sữa 50g",
+      "Sữa mẹ/CT 100ml",
+      "Sinh tố bơ 50g",
+      "Sữa mẹ/CT 100ml",
+      "Bánh quy dặm mềm 2 chiếc"
+    ],
+    "Tối": [
+      "Cháo tôm mướp",
+      "Cháo bò rau dền",
+      "Cháo óc lợn đậu Hà Lan",
+      "Cháo lươn khoai môn",
+      "Cháo sườn hạt sen",
+      "Cháo cá quả rau cải",
+      "Cháo gà ta nấm hương"
+    ],
+    "Phụ tối": [
+      "Sữa mẹ/CT 100ml",
+      "Sữa mẹ/CT 100ml",
+      "Sữa mẹ/CT 100ml",
+      "Sữa mẹ/CT 100ml",
+      "Sữa mẹ/CT 100ml",
+      "Sữa mẹ/CT 100ml",
+      "Sữa mẹ/CT 100ml"
+    ],
+    "Ghi chú": "Thêm 1 thìa cafe (5ml) dầu ô liu/mỡ gà vào mỗi bữa cháo. 6-8 cữ bú xen kẽ."
+  },
+  "12-24m_Bình thường": {
+    "Sáng": [
+      "Bún mọc sườn (cắt nhỏ)",
+      "Cháo sườn quẩy mềm",
+      "Phở bò thái vụn",
+      "Bánh cuốn thịt băm",
+      "Xôi xéo đậu xanh",
+      "Cháo lươn đồng",
+      "Miến gà cắt nhỏ"
+    ],
+    "Phụ sáng": [
+      "Sữa hạt macca",
+      "Sữa chua không đường 100g",
+      "Chuối tiêu 1/2 quả",
+      "Váng sữa 1 hộp",
+      "Bơ dầm sữa 100g",
+      "Đu đủ chín 100g",
+      "Nước cam vắt 100ml"
+    ],
+    "Trưa": [
+      "Cơm nát + Cá quả kho tộ + Canh chua",
+      "Cơm nát + Đậu nhồi thịt",
+      "Cơm nát + Tôm xào mướp",
+      "Cơm nát + Thịt băm mộc nhĩ",
+      "Cơm nát + Trứng đúc thịt",
+      "Cơm nát + Bò xào hành tây",
+      "Cơm nát + Cá chép chưng tương"
+    ],
+    "Phụ chiều": [
+      "Sữa tươi/CT 150ml",
+      "Bánh bông lan 1 lát",
+      "Chè đỗ đen mềm 100ml",
+      "Sữa chua 100g",
+      "Sinh tố xoài 100ml",
+      "Hoa quả dầm 100g",
+      "Sữa hạt hạnh nhân 150ml"
+    ],
+    "Tối": [
+      "Cơm nát + Canh cua mướp",
+      "Cơm nát + Gà ta rang gừng",
+      "Cơm nát + Chả lá lốt",
+      "Cơm nát + Canh sườn bí xanh",
+      "Cơm nát + Cá thu sốt cà",
+      "Cơm nát + Mực xào tỏi",
+      "Cơm nát + Thịt rang cháy cạnh mềm"
+    ],
+    "Phụ tối": [
+      "Sữa ấm 150ml",
+      "Sữa ấm 150ml",
+      "Sữa chua không đường",
+      "Sữa hạt óc chó",
+      "Sữa ấm 150ml",
+      "Trái cây nhẹ",
+      "Sữa ấm 150ml"
+    ],
+    "Ghi chú": "Duy trì 500ml sữa/ngày. Cắt nhỏ thức ăn, nấu chín mềm."
+  },
+  "3-5y_Bình thường": {
+    "Sáng": [
+      "Phở bò nước trong",
+      "Bún chả Hà Nội",
+      "Bánh khúc 1 chiếc",
+      "Xôi gấc chả giò",
+      "Bánh mì trứng pate",
+      "Cháo trai sườn sụn",
+      "Mì vằn thắn"
+    ],
+    "Phụ sáng": [
+      "Sữa chua không đường 100g",
+      "Cam sành 1/2 quả",
+      "Sữa hạt óc chó 150ml",
+      "Sữa tươi 150ml",
+      "Dưa hấu 1 miếng",
+      "Sữa hạt hạnh nhân",
+      "Ổi chín 1/2 quả"
+    ],
+    "Trưa": [
+      "Cơm + Gà nướng thảo mộc + Salad dưa leo",
+      "Cơm + Cá trắm kho + Canh mùng tơi",
+      "Cơm + Nem rán + Salad cà chua",
+      "Cơm + Sườn xào chua ngọt",
+      "Cơm + Tôm rang + Canh cải xanh",
+      "Cơm + Thịt kho tàu + Canh chua",
+      "Cơm + Bò lúc lắc + Salad xà lách"
+    ],
+    "Phụ chiều": [
+      "Sữa tươi 150ml",
+      "Bánh quy 2 chiếc",
+      "Chè đậu xanh 1 cốc",
+      "Sữa chua 100g",
+      "Sữa hạt macca",
+      "Bánh bao chay",
+      "Sữa tươi 150ml"
+    ],
+    "Tối": [
+      "Cơm + Đậu rán + Canh cua mướp",
+      "Cơm + Gà nướng mật ong + Salad",
+      "Cơm + Chả cá lăng + Rau cải luộc",
+      "Cơm + Mực xào + Canh sườn",
+      "Cơm + Tôm tẩm bột + Canh dền",
+      "Cơm + Cá hồi áp chảo + Canh măng",
+      "Cơm + Cá rô đồng rán + Canh ngót"
+    ],
+    "Phụ tối": [
+      "Sữa chua không đường",
+      "Sữa ấm 150ml",
+      "Sữa hạt điều 150ml",
+      "Sữa ấm 150ml",
+      "Sữa ấm 150ml",
+      "Sữa ấm 150ml",
+      "Trái cây nhẹ"
+    ],
+    "Ghi chú": "Ăn chung bữa gia đình, đủ 4 nhóm chất. Dùng mỡ lợn kết hợp dầu thực vật."
+  },
+  "6y+_Bình thường": {
+    "Sáng": [
+      "Bún bò Huế 1 bát",
+      "Phở gà 1 bát",
+      "Xôi thịt kho trứng",
+      "Bánh mì sốt vang",
+      "Bún cá rô đồng",
+      "Cơm rang dưa bò",
+      "Bánh cuốn Thanh Trì"
+    ],
+    "Phụ sáng": [
+      "Sữa hạt macca 180ml",
+      "Trái cây theo mùa",
+      "Hạnh nhân/óc chó",
+      "Sữa chua 100g",
+      "Trái cây theo mùa",
+      "Sữa hạt hạnh nhân",
+      "Sữa tươi 180ml"
+    ],
+    "Trưa": [
+      "Cơm + Gà nướng bơ tỏi + Salad bắp cải",
+      "Cơm + Cá hồi áp chảo + Salad bơ",
+      "Cơm + Bò lúc lắc + Khoai tây",
+      "Cơm + Chả lá lốt + Canh hến",
+      "Cơm + Mực nhồi thịt + Canh mướp",
+      "Cơm + Lươn xào sả ớt + Rau muống",
+      "Cơm + Ức gà nướng tiêu + Canh sườn"
+    ],
+    "Phụ chiều": [
+      "Sữa chua không đường",
+      "Bánh mì gối bơ lạc",
+      "Hoa quả tươi",
+      "Sữa hạt điều",
+      "Khoai lang luộc",
+      "Sinh tố bơ",
+      "Sữa hạt óc chó"
+    ],
+    "Tối": [
+      "Cơm + Đậu sốt thịt + Canh ngao",
+      "Cơm + Sườn non ram + Canh rau ngót",
+      "Cơm + Gà xào nấm + Canh cải thảo",
+      "Cơm + Cá kho tộ + Rau luộc",
+      "Cơm + Cá hồi áp chảo + Salad dưa chuột",
+      "Cơm + Trứng ốp la + Salad cà chua",
+      "Cơm + Vịt quay + Canh măng tiết"
+    ],
+    "Phụ tối": [
+      "Sữa tươi ấm 150ml",
+      "Sữa chua không đường",
+      "Sữa hạt macca 150ml",
+      "Sữa ấm 150ml",
+      "Trái cây nhẹ",
+      "Sữa hạt hạnh nhân 150ml",
+      "Sữa ấm 150ml"
+    ],
+    "Ghi chú": "Khuyến khích vận động >60 phút/ngày. Uống đủ 1.5-2L nước."
+  },
+  "6-12m_Suy dinh dưỡng": {
+    "Sáng": [
+      "Cháo sườn cốt dừa (Tăng NL)",
+      "Cháo lươn dầu mè",
+      "Cháo tôm mỡ hành",
+      "Cháo gà nấm hương",
+      "Cháo cá quả mỡ lợn",
+      "Cháo bò khoai lang",
+      "Cháo thịt băm bí đỏ"
+    ],
+    "Phụ sáng": [
+      "Sữa cao năng lượng 100ml",
+      "Bơ dầm sữa mẹ/CT",
+      "Váng sữa nguyên kem",
+      "Sữa cao năng lượng",
+      "Chuối dầm bơ",
+      "Sữa chua phô mai",
+      "Nước cam thêm đường"
+    ],
+    "Trưa": [
+      "Cháo cá lóc thêm 10ml mỡ",
+      "Cháo thịt trứng gà",
+      "Cháo cua đồng gạch",
+      "Cháo bò khoai môn",
+      "Cháo ếch đậu xanh",
+      "Cháo chim câu hạt sen",
+      "Cháo ngao mồng tơi"
+    ],
+    "Phụ chiều": [
+      "Sữa mẹ/CT 150ml",
+      "Chè đậu xanh cốt dừa",
+      "Phô mai miếng",
+      "Sữa F100",
+      "Bánh flan caramen",
+      "Sữa chua có đường",
+      "Sữa mẹ/CT 150ml"
+    ],
+    "Tối": [
+      "Cháo tôm dầu gấc",
+      "Cháo óc lợn",
+      "Cháo thịt măng tây",
+      "Cháo sườn sụn hạt sen",
+      "Cháo lươn rau ngót",
+      "Cháo trứng bơ",
+      "Cháo cá chép bó xôi"
+    ],
+    "Phụ tối": [
+      "Sữa mẹ/CT 100ml",
+      "Sữa F100 100ml",
+      "Sữa mẹ/CT 100ml",
+      "Sữa mẹ/CT 100ml",
+      "Sữa mẹ/CT 100ml",
+      "Sữa mẹ/CT 100ml",
+      "Sữa mẹ/CT 100ml"
+    ],
+    "Ghi chú": "Bắt buộc thêm 2 muỗng dầu/mỡ vào cháo. Ưu tiên sữa cao năng lượng."
+  },
+  "12-24m_Suy dinh dưỡng": {
+    "Sáng": [
+      "Phở bò nước béo",
+      "Cháo sườn nhiều thịt",
+      "Bún mọc thêm giò",
+      "Xôi xéo mỡ hành",
+      "Bánh cuốn chả mỡ",
+      "Cháo lươn đặc",
+      "Miến gà thêm da"
+    ],
+    "Phụ sáng": [
+      "Sữa F100 150ml",
+      "Váng sữa 1 hộp",
+      "Chuối dầm sữa",
+      "Bánh flan",
+      "Sữa chua có đường",
+      "Bơ dầm sữa đặc",
+      "Sữa F100 150ml"
+    ],
+    "Trưa": [
+      "Cơm nát + Cá kho ba chỉ",
+      "Cơm nát + Tôm rim thịt nạc vai",
+      "Cơm nát + Trứng đúc thịt",
+      "Cơm nát + Thịt lợn quay giòn",
+      "Cơm nát + Bò xào hành tây nhiều dầu",
+      "Cơm nát + Gà rang gừng da",
+      "Cơm nát + Sườn chua ngọt"
+    ],
+    "Phụ chiều": [
+      "Chè bắp cốt dừa",
+      "Sữa đặc 100ml",
+      "Xúc xích chiên",
+      "Khoai tây chiên",
+      "Sữa cao NL 150ml",
+      "Sinh tố bơ sữa",
+      "Bánh quy bơ"
+    ],
+    "Tối": [
+      "Cơm nát + Canh cua mướp gạch",
+      "Cơm nát + Chả lá lốt mỡ",
+      "Cơm nát + Cá trắm kho riềng",
+      "Cơm nát + Đậu nhồi thịt chiên",
+      "Cơm nát + Thịt rang mỡ",
+      "Cơm nát + Nem rán",
+      "Cơm nát + Mực xào mỡ"
+    ],
+    "Phụ tối": [
+      "Sữa Pedia 150ml",
+      "Sữa F100 150ml",
+      "Sữa Pedia 150ml",
+      "Sữa F100 150ml",
+      "Sữa Pedia 150ml",
+      "Sữa F100 150ml",
+      "Sữa Pedia 150ml"
+    ],
+    "Ghi chú": "Năng lượng tăng 30-50%. Ăn thêm mỡ lợn, bơ, sữa đặc."
+  },
+  "3-5y_Suy dinh dưỡng": {
+    "Sáng": [
+      "Bún chả mỡ",
+      "Phở gà da béo",
+      "Xôi thịt trứng ốp",
+      "Bánh mì pate bơ",
+      "Mì vằn thắn",
+      "Cháo sườn sụn quẩy",
+      "Bánh khúc thịt mỡ"
+    ],
+    "Phụ sáng": [
+      "Sữa Pedia 200ml",
+      "Bánh bông lan trứng muối",
+      "Váng sữa",
+      "Kẹo ngọt",
+      "Sinh tố xoài sữa",
+      "Trái cây bơ dầm",
+      "Sữa Pedia 200ml"
+    ],
+    "Trưa": [
+      "Cơm + Thịt kho tàu (nhiều mỡ)",
+      "Cơm + Nem rán giòn",
+      "Cơm + Tôm rang ba chỉ",
+      "Cơm + Cá diêu hồng chiên xù",
+      "Cơm + Sườn chua ngọt tẩm bột",
+      "Cơm + Đậu tẩm hành mỡ",
+      "Cơm + Gà rán tẩm bột"
+    ],
+    "Phụ chiều": [
+      "Chè trôi nước cốt dừa",
+      "Sữa chua đá sữa đặc",
+      "Bánh bao nhân thịt",
+      "Sữa cao NL 200ml",
+      "Khoai môn chiên bơ",
+      "Kem",
+      "Chè đậu đen cốt dừa"
+    ],
+    "Tối": [
+      "Cơm + Chả rươi chiên",
+      "Cơm + Thịt quay đòn",
+      "Cơm + Cá trắm kho tộ",
+      "Cơm + Mực chiên bơ",
+      "Cơm + Trứng rán cuộn mỡ",
+      "Cơm + Bò lúc lắc khoai tây",
+      "Cơm + Canh sườn hầm đu đủ"
+    ],
+    "Phụ tối": [
+      "Sữa cao NL 200ml",
+      "Sữa cao NL 200ml",
+      "Sữa cao NL 200ml",
+      "Sữa cao NL 200ml",
+      "Sữa cao NL 200ml",
+      "Sữa cao NL 200ml",
+      "Sữa cao NL 200ml"
+    ],
+    "Ghi chú": "Đảm bảo bữa nào cũng có chất béo. Bữa vặt ăn lạc, hạt điều."
+  },
+  "6y+_Suy dinh dưỡng": {
+    "Sáng": [
+      "Bún bò Huế giò heo",
+      "Phở bò sốt vang",
+      "Xôi gà nấm mỡ hành",
+      "Bánh mì bít tết bơ",
+      "Cơm rang dưa bò mỡ lợn",
+      "Bún cá chiên giòn",
+      "Miến lươn xào mỡ"
+    ],
+    "Phụ sáng": [
+      "Sữa đặc 1 cốc",
+      "Bánh mì bơ",
+      "Xúc xích",
+      "Bánh quy bơ",
+      "Trái cây sấy ngọt",
+      "Sữa Pedia",
+      "Bơ dầm sữa"
+    ],
+    "Trưa": [
+      "Cơm + Bê thui xào sả ớt",
+      "Cơm + Thịt kho trứng ba chỉ",
+      "Cơm + Cá chép om dưa mỡ lợn",
+      "Cơm + Gà rang muối",
+      "Cơm + Sườn nướng",
+      "Cơm + Tôm sú chiên xù",
+      "Cơm + Lươn om chuối đậu"
+    ],
+    "Phụ chiều": [
+      "Trà sữa/Sữa lắc béo",
+      "Gà viên chiên",
+      "Khoai tây chiên",
+      "Sữa cao NL 200ml",
+      "Chè Thái cốt dừa",
+      "Bánh ngọt",
+      "Sinh tố sầu riêng"
+    ],
+    "Tối": [
+      "Cơm + Đuôi bò hầm",
+      "Cơm + Chả cá Lã Vọng",
+      "Cơm + Chim quay",
+      "Cơm + Nem cua bể",
+      "Cơm + Thịt đông/Thịt luộc nách",
+      "Cơm + Vịt nướng mỡ hành",
+      "Cơm + Mực nhồi thịt chiên mắm"
+    ],
+    "Phụ tối": [
+      "Sữa cao NL 200ml",
+      "Sữa cao NL 200ml",
+      "Sữa cao NL 200ml",
+      "Sữa cao NL 200ml",
+      "Sữa cao NL 200ml",
+      "Sữa cao NL 200ml",
+      "Sữa cao NL 200ml"
+    ],
+    "Ghi chú": "Khuyến khích ăn món xào chiên, món kho thịt ba chỉ."
+  },
+  "6-12m_Thừa cân/Béo phì": {
+    "Sáng": [
+      "Cháo rau củ tôm (Không dầu)",
+      "Cháo gà nạc bí xanh",
+      "Cháo cá lóc hấp rau cải",
+      "Cháo thịt thăn mồng tơi",
+      "Cháo ngao rau dền",
+      "Cháo bò nạc su hào",
+      "Cháo lươn hấp bầu"
+    ],
+    "Phụ sáng": [
+      "Trà lúa mạch",
+      "Cam múi ít ngọt",
+      "Nước ép cần tây",
+      "Đu đủ miếng",
+      "Lê hấp",
+      "Táo cắt lát",
+      "Thanh long đỏ"
+    ],
+    "Trưa": [
+      "Cháo ức gà rau ngót",
+      "Cháo tôm hấp mướp",
+      "Cháo cua đồng rau đay",
+      "Cháo cá quả luộc cải ngọt",
+      "Cháo chim câu nạc bỏ da",
+      "Cháo nạc bí đỏ ít",
+      "Cháo đậu hũ rau xanh"
+    ],
+    "Phụ chiều": [
+      "Sữa hạt hạnh nhân 100ml",
+      "Sữa chua không đường",
+      "Nước ép ổi",
+      "Củ đậu",
+      "Sữa mẹ 100ml",
+      "Dưa chuột",
+      "Sữa tách béo 100ml"
+    ],
+    "Tối": [
+      "Cháo cá chép hấp măng tây",
+      "Cháo nghêu rau muống",
+      "Cháo tôm nấm hương",
+      "Cháo thịt nạc su su",
+      "Cháo lươn nấu trong",
+      "Cháo ếch mồng tơi",
+      "Cháo gà nạc cà chua"
+    ],
+    "Phụ tối": [
+      "Sữa mẹ 100ml",
+      "Sữa tách béo 100ml",
+      "Sữa mẹ 100ml",
+      "Sữa tách béo 100ml",
+      "Sữa mẹ 100ml",
+      "Sữa tách béo 100ml",
+      "Sữa mẹ 100ml"
+    ],
+    "Ghi chú": "Giảm lượng tinh bột (cháo loãng hơn). Tuyệt đối không thêm mỡ bơ."
+  },
+  "12-24m_Thừa cân/Béo phì": {
+    "Sáng": [
+      "Bún cá nước trong (cá luộc)",
+      "Phở gà nạc (không da)",
+      "Cháo sườn nạc nấu trong",
+      "Miến lươn luộc",
+      "Bánh cuốn chay mộc nhĩ",
+      "Cháo yến mạch ức gà",
+      "Súp lơ xanh luộc + trứng cút"
+    ],
+    "Phụ sáng": [
+      "Sữa hạt macca 150ml",
+      "Bưởi",
+      "Ổi",
+      "Táo xanh",
+      "Sữa chua không đường",
+      "Sữa tách béo 150ml",
+      "Cà chua bi"
+    ],
+    "Trưa": [
+      "Cơm ít + Ức gà nướng + Salad rau mầm",
+      "Cơm ít + Tôm luộc + Canh rau ngót",
+      "Cơm ít + Đậu hũ luộc + Cải thảo",
+      "Cơm ít + Cá quả hấp + Canh chua",
+      "Cơm ít + Bò nạc xào (nước) + Canh dền",
+      "Cơm ít + Gà nướng bơ tỏi + Salad bắp cải",
+      "Cơm ít + Canh cua mồng tơi (ít gạch)"
+    ],
+    "Phụ chiều": [
+      "Trái cây ít ngọt",
+      "Nước ép cần tây",
+      "Củ đậu",
+      "Dưa chuột",
+      "Sữa tách béo 150ml",
+      "Sữa chua không đường",
+      "Sữa hạt hạnh nhân 150ml"
+    ],
+    "Tối": [
+      "Súp bí ngô ức gà",
+      "Cơm ít + Cá rô luộc + Canh cải",
+      "Cơm ít + Ngao hấp sả + Salad dưa leo",
+      "Súp gà ngô non",
+      "Cháo yến mạch thịt băm",
+      "Cơm ít + Bầu luộc chấm vừng",
+      "Miến dong nấu tôm nạc"
+    ],
+    "Phụ tối": [
+      "Sữa tách béo 150ml",
+      "Sữa chua không đường",
+      "Sữa tách béo 150ml",
+      "Nước ép táo nhạt",
+      "Sữa tách béo 150ml",
+      "Sữa chua không đường",
+      "Sữa tách béo 150ml"
+    ],
+    "Ghi chú": "Giảm nửa lượng cơm. Tăng gấp đôi rau. Chế biến chủ yếu luộc, hấp."
+  },
+  "3-5y_Thừa cân/Béo phì": {
+    "Sáng": [
+      "Phở bò nạc chín",
+      "Bún ốc nước trong",
+      "Bánh mì đen kẹp ức gà nướng",
+      "Ngũ cốc nguyên cám sữa tươi",
+      "Bún cá rô luộc",
+      "Cháo yến mạch tôm nấm",
+      "Khoai lang luộc + Sữa tách béo"
+    ],
+    "Phụ sáng": [
+      "Táo xanh",
+      "Sữa hạt óc chó 150ml",
+      "Thanh long",
+      "Ổi",
+      "Dưa leo",
+      "Sữa hạt macca 150ml",
+      "Sữa chua không đường"
+    ],
+    "Trưa": [
+      "Cơm lứt + Ức gà nướng thảo mộc + Salad",
+      "Cơm ít + Cá chép hấp xì dầu + Cải luộc",
+      "Cơm ít + Đậu luộc + Salad cà chua",
+      "Cơm ít + Tôm hấp + Canh ngót",
+      "Cơm ít + Bò áp chảo + Salad xà lách",
+      "Cơm lứt + Cá hồi áp chảo + Salad",
+      "Cơm ít + Mực hấp sả + Su hào luộc"
+    ],
+    "Phụ chiều": [
+      "Sữa hạt hạnh nhân 150ml",
+      "Sữa chua không đường",
+      "Nước ép cần tây",
+      "Đu đủ chín ít",
+      "Trái cây ít ngọt",
+      "Nước lọc",
+      "Củ đậu"
+    ],
+    "Tối": [
+      "Cơm lứt + Canh ngao mồng tơi + Đậu",
+      "Cơm ít + Trứng hấp + Canh dưa",
+      "Cơm ít + Cá rô luộc tẩm gừng + Canh sấu",
+      "Cơm ít + Gà luộc + Salad dưa chuột",
+      "Cơm ít + Ức gà nướng tiêu + Xà lách",
+      "Cơm ít + Tôm nướng + Salad dưa chuột",
+      "Miến dong nấu cua đồng rau nhút"
+    ],
+    "Phụ tối": [
+      "Sữa tách béo 150ml",
+      "Sữa chua không đường",
+      "Sữa hạt óc chó 150ml",
+      "Nước chanh nhạt",
+      "Sữa tách béo 150ml",
+      "Sữa hạt macca 150ml",
+      "Sữa chua không đường"
+    ],
+    "Ghi chú": "Tuyệt đối không ăn đồ chiên rán, thức ăn nhanh. Vận động 60 phút."
+  },
+  "6y+_Thừa cân/Béo phì": {
+    "Sáng": [
+      "Phở gà thịt trắng bỏ da",
+      "Bún riêu ốc (không chả)",
+      "Khoai lang luộc to + Sữa hạt",
+      "Ngũ cốc lúa mạch nguyên cám",
+      "Bún bò nạc",
+      "Bánh cuốn chay mắm nhạt",
+      "Súp gà xé nấm"
+    ],
+    "Phụ sáng": [
+      "Sữa hạt hạnh nhân 180ml",
+      "Ổi 1 quả",
+      "Sữa hạt óc chó 180ml",
+      "Sữa chua không đường",
+      "Dưa chuột 1 quả",
+      "Nước ép cần tây",
+      "Thanh long 1/2 quả"
+    ],
+    "Trưa": [
+      "Cơm lứt + Cá hồi áp chảo + Salad dầu giấm",
+      "Cơm lứt + Ức gà nướng tiêu xanh + Salad",
+      "Cơm lứt + Tôm sú luộc + Canh bí ngao",
+      "Cơm lứt + Bò áp chảo + Salad xà lách",
+      "Cơm ít + Đậu sốt nấm + Rau muống luộc",
+      "Cơm ít + Mực nướng sa tế + Salad dưa chuột",
+      "Cơm ít + Chả cá hấp + Su su luộc"
+    ],
+    "Phụ chiều": [
+      "Sữa hạt macca 180ml",
+      "Nước chanh không đường",
+      "Củ đậu",
+      "Sữa chua không đường",
+      "Trái cây ít ngọt",
+      "Sữa tách béo 180ml",
+      "Trà xanh nhạt"
+    ],
+    "Tối": [
+      "Cơm lứt + Canh cua mướp đắng + Trứng luộc",
+      "Cơm lứt + Gà nướng thảo mộc + Rau dền luộc",
+      "Cơm ít + Cá rô om măng chua + Đậu bắp hấp",
+      "Cơm ít + Bò thăn nướng + Salad rau mầm",
+      "Cơm ít + Tép rang nhạt + Canh sấu rau rút",
+      "Cơm ít + Cá hồi nướng chanh + Salad",
+      "Miến dong xào ức gà rau cải (ít dầu)"
+    ],
+    "Phụ tối": [
+      "Sữa tách béo 180ml",
+      "Sữa chua không đường",
+      "Sữa hạt hạnh nhân 180ml",
+      "Nước ép bưởi",
+      "Sữa tách béo 180ml",
+      "Sữa hạt óc chó 180ml",
+      "Sữa chua không đường"
+    ],
+    "Ghi chú": "Giảm 30% năng lượng. Loại bỏ đồ ngọt, bánh kẹo, nước có gas. Tập thể dục ra mồ hôi."
+  }
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  gender: 'Nam',
+  tuvan: 'Có',
+  months: 0,
+  currentResult: null,
+};
+let patientLog = JSON.parse(localStorage.getItem('nhi_khoa_log') || '[]');
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('inp_exam_date').value = today;
+  renderLog();
+});
+
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function setGender(g) {
+  state.gender = g;
+  document.getElementById('btn_nam').classList.toggle('active', g === 'Nam');
+  document.getElementById('btn_nu').classList.toggle('active', g === 'Nữ');
+  autoCalc();
+}
+
+function setTuVan(v) {
+  state.tuvan = v;
+  document.getElementById('btn_tuvan_co').classList.toggle('active', v === 'Có');
+  document.getElementById('btn_tuvan_khong').classList.toggle('active', v === 'Không');
+}
+
+// ============================================================
+// AUTO CALCULATIONS
+// ============================================================
+function autoCalc() {
+  const dob = document.getElementById('inp_dob').value;
+  const examDate = document.getElementById('inp_exam_date').value;
+  const weight = parseFloat(document.getElementById('inp_weight').value);
+  const height = parseFloat(document.getElementById('inp_height').value);
+
+  // Age calculation
+  if (dob && examDate) {
+    const d1 = new Date(dob);
+    const d2 = new Date(examDate);
+    if (d2 >= d1) {
+      let years = d2.getFullYear() - d1.getFullYear();
+      let months = d2.getMonth() - d1.getMonth();
+      if (months < 0) { years--; months += 12; }
+      const totalMonths = years * 12 + months;
+      state.months = totalMonths;
+      const ageStr = years > 0
+        ? `${years} tuổi ${months} tháng (${totalMonths} tháng)`
+        : `${totalMonths} tháng tuổi`;
+      document.getElementById('out_age').value = ageStr;
+      document.getElementById('out_months').value = totalMonths + ' tháng';
+    } else {
+      document.getElementById('out_age').value = '';
+    }
+  }
+
+  // BMI
+  if (weight > 0 && height > 0) {
+    const bmi = weight / ((height / 100) ** 2);
+    document.getElementById('out_bmi').value = bmi.toFixed(1);
+  }
+
+  // WFA status quick preview
+  if (state.months > 0 && weight > 0) {
+    const wfaRef = state.gender === 'Nam' ? WHO_BOYS_WFA : WHO_GIRLS_WFA;
+    const m = Math.min(state.months, 60);
+    const median = wfaRef[m];
+    if (median) {
+      const pct = ((weight - median) / median) * 100;
+      let status = pct < -20 ? '⚠️ Nhẹ cân nặng' : pct < -10 ? '⚠️ Nhẹ cân' : pct > 20 ? '⚠️ Thừa cân' : '✅ Bình thường';
+      document.getElementById('out_wfa_status').value = status;
+    }
+  }
+
+  // Update live preview
+  updateLivePreview();
+}
+
+function updateLivePreview() {
+  const name = document.getElementById('inp_name').value;
+  const weight = parseFloat(document.getElementById('inp_weight').value);
+  const height = parseFloat(document.getElementById('inp_height').value);
+  const body = document.getElementById('live-preview-body');
+
+  if (!name || !weight || !height || !state.months) {
+    body.innerHTML = `<div style="text-align:center;padding:24px;color:var(--text-muted);"><div style="font-size:40px;margin-bottom:8px;">📋</div><p style="font-size:13px;">Nhập đầy đủ: họ tên, ngày sinh, ngày khám, cân nặng, chiều cao để xem kết quả</p></div>`;
+    return;
+  }
+
+  const result = calculate();
+  if (!result) return;
+
+  const statusColor = {
+    'Bình thường': 'badge-normal',
+    'Nhẹ cân': 'badge-warn',
+    'Nhẹ cân nặng': 'badge-danger',
+    'Thấp còi': 'badge-info',
+    'Thấp còi nặng': 'badge-danger',
+    'Thừa cân': 'badge-warn',
+    'Béo phì': 'badge-obesity',
+    'Suy dinh dưỡng cấp': 'badge-danger',
+    'SDD cấp nặng': 'badge-danger',
+  };
+
+  body.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span class="badge ${statusColor[result.wfa] || 'badge-info'}">CN/Tuổi: ${result.wfa}</span>
+        <span class="badge ${statusColor[result.hfa] || 'badge-info'}">CC/Tuổi: ${result.hfa}</span>
+        <span class="badge ${statusColor[result.wfh] || 'badge-info'}">CN/CC: ${result.wfh}</span>
+      </div>
+      <div class="divider" style="margin:4px 0;"></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;">
+        <span style="color:var(--text-muted);">NL chuẩn</span>
+        <strong>${result.stdEnergy} kcal/ngày</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;">
+        <span style="color:var(--text-muted);">NL cá nhân</span>
+        <strong style="color:var(--primary);">${result.targetEnergy} kcal/ngày</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;">
+        <span style="color:var(--text-muted);">Đạm</span>
+        <strong>${result.proteinG}g | Béo ${result.lipidG}g | Bột ${result.carbG}g</strong>
+      </div>
+    </div>
+  `;
+
+  // WHO compare
+  updateWHOCompare(result);
+  updateEnergyPanel(result);
+}
+
+function updateWHOCompare(result) {
+  const body = document.getElementById('who-compare-body');
+  
+  let targetW = 'N/A (>5 Tuổi)', wDiffStr = '-', wClass = '';
+  if (result.whoWeight !== null) {
+      const wDiff = (result.weight - result.whoWeight).toFixed(1);
+      wClass = Math.abs(parseFloat(wDiff)) < 0.5 ? 'diff-ok' : parseFloat(wDiff) < 0 ? 'diff-low' : 'diff-high';
+      targetW = `CĐ: ${result.whoWeight} kg`;
+      wDiffStr = `${parseFloat(wDiff) > 0 ? '+' : ''}${wDiff} kg`;
+  }
+
+  const hDiff = (result.height - result.whoHeight).toFixed(1);
+  const hClass = Math.abs(parseFloat(hDiff)) < 0.5 ? 'diff-ok' : parseFloat(hDiff) < 0 ? 'diff-low' : 'diff-high';
+
+  body.innerHTML = `
+    <div class="compare-row">
+      <div class="compare-label">Cân nặng</div>
+      <div class="compare-current">${result.weight}</div><div class="compare-unit">kg</div>
+      <div class="compare-arrow">→</div>
+      <div class="compare-target">${targetW}</div>
+      <div class="compare-diff ${wClass}">${wDiffStr}</div>
+    </div>
+    <div class="compare-row">
+      <div class="compare-label">Chiều cao</div>
+      <div class="compare-current">${result.height}</div><div class="compare-unit">cm</div>
+      <div class="compare-arrow">→</div>
+      <div class="compare-target">CĐ: ${result.whoHeight} cm</div>
+      <div class="compare-diff ${hClass}">${parseFloat(hDiff) > 0 ? '+' : ''}${hDiff} cm</div>
+    </div>
+    <div class="compare-row">
+      <div class="compare-label">BMI</div>
+      <div class="compare-current">${result.bmi}</div><div class="compare-unit">kg/m²</div>
+      <div class="compare-arrow">→</div>
+      <div class="compare-target">CĐ: 18.5–24.9</div>
+      <div class="compare-diff ${result.bmi < 18.5 ? 'diff-low' : result.bmi > 25 ? 'diff-high' : 'diff-ok'}">${result.bmi < 18.5 ? 'Thấp' : result.bmi > 25 ? 'Cao' : '✓ OK'}</div>
+    </div>
+  `;
+}
+
+function updateEnergyPanel(result) {
+  const body = document.getElementById('energy-body');
+  const carbPct = Math.round(result.carbG * 4 * 100 / result.targetEnergy);
+  const protPct = Math.round(result.proteinG * 4 * 100 / result.targetEnergy);
+  const lipPct = 100 - carbPct - protPct;
+
+  body.innerHTML = `
+    <div style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="font-size:12px;color:var(--text-muted);">Năng lượng chuẩn (theo tuổi)</span>
+        <strong style="font-size:14px;">${result.stdEnergy} kcal/ngày</strong>
+      </div>
+      <div style="display:flex;justify-content:space-between;">
+        <span style="font-size:12px;color:var(--text-muted);">Năng lượng cá nhân hóa</span>
+        <strong style="font-size:16px;color:var(--primary);">${result.targetEnergy} kcal/ngày</strong>
+      </div>
+      ${result.energyNote ? `<div class="info-box ${result.energyNoteType || 'info'}" style="margin-top:8px;"><span>${result.energyNoteIcon || 'ℹ️'}</span><p>${result.energyNote}</p></div>` : ''}
+    </div>
+    <div class="divider" style="margin:12px 0;"></div>
+    <div style="margin-bottom:8px;font-size:12px;font-weight:600;color:var(--text-secondary);">PHÂN BỔ ĐẠI CHẤT DINH DƯỠNG</div>
+    <div class="macro-chart">
+      <div class="macro-seg" style="flex:${carbPct};background:#FF6F00;">Tinh bột</div>
+      <div class="macro-seg" style="flex:${protPct};background:#0277BD;">Đạm</div>
+      <div class="macro-seg" style="flex:${lipPct};background:#2E7D32;">Béo</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+      <div style="text-align:center;padding:10px;background:#FFF8E1;border-radius:8px;">
+        <div style="font-size:18px;font-weight:700;color:#FF6F00;">${result.carbG}g</div>
+        <div style="font-size:10px;color:var(--text-muted);">Bột đường (${carbPct}%)</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:#E1F5FE;border-radius:8px;">
+        <div style="font-size:18px;font-weight:700;color:#0277BD;">${result.proteinG}g</div>
+        <div style="font-size:10px;color:var(--text-muted);">Đạm (${protPct}%)</div>
+      </div>
+      <div style="text-align:center;padding:10px;background:#E8F5E9;border-radius:8px;">
+        <div style="font-size:18px;font-weight:700;color:#2E7D32;">${result.lipidG}g</div>
+        <div style="font-size:10px;color:var(--text-muted);">Béo (${lipPct}%)</div>
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// CORE CALCULATION ENGINE
+// ============================================================
+function calculate() {
+  const name = document.getElementById('inp_name').value.trim();
+  const dob = document.getElementById('inp_dob').value;
+  const examDate = document.getElementById('inp_exam_date').value;
+  const weight = parseFloat(document.getElementById('inp_weight').value);
+  const height = parseFloat(document.getElementById('inp_height').value);
+  const muac = parseFloat(document.getElementById('inp_muac').value) || null;
+
+  if (!name || !dob || !examDate || !weight || !height || state.months < 0) return null;
+
+  const m = state.months;
+  const isBoy = state.gender === 'Nam';
+
+  // WHO References
+  const wfaTable = isBoy ? WHO_BOYS_WFA : WHO_GIRLS_WFA;
+  const hfaTable = isBoy ? WHO_BOYS_HFA : WHO_GIRLS_HFA;
+  const mCapped228 = Math.min(m, 228);
+
+  const whoWeight = m <= 60 ? wfaTable[m] : null;
+  const whoHeight = hfaTable[mCapped228] || hfaTable[228] || 150;
+
+  // BMI
+  const bmi = parseFloat((weight / ((height / 100) ** 2)).toFixed(1));
+
+  // Z-scores (simplified percentile method)
+  let wfaZ = null, wfhZ = null;
+  let wfa = 'Không áp dụng (>5 Tuổi)', wfh = 'Không áp dụng (>5 Tuổi)';
+  
+  if (whoWeight !== null) {
+      wfaZ = (weight - whoWeight) / (whoWeight * 0.14);
+      const wfhRef = whoWeight * (height / whoHeight);
+      wfhZ = (weight - wfhRef) / (wfhRef * 0.12);
+      wfa = classifyZ(wfaZ, 'wfa');
+      wfh = classifyZ(wfhZ, 'wfh');
+  }
+
+  const hfaZ = (height - whoHeight) / (whoHeight * 0.06);
+  const hfa = classifyZ(hfaZ, 'hfa');
+
+  // MUAC status
+  let muacStatus = null;
+  if (muac) {
+    if (muac < 11.5) muacStatus = '[!!] SDD CẤP NẶNG (<11.5cm)';
+    else if (muac < 12.5) muacStatus = '[!] SDD CẤP VỪA (11.5–12.5cm)';
+    else muacStatus = 'Bình thường (≥12.5cm)';
+  }
+
+  let ageKey = m < 12 ? '6-12m' : m < 24 ? '12-24m' : m < 72 ? '3-5y' : '6y+';
+  let statusKey = 'Bình thường';
+  if (wfhZ !== null && (wfhZ < -2 || wfaZ < -2)) statusKey = 'Suy dinh dưỡng';
+  else if (hfaZ < -3 || (m > 60 && hfaZ < -2)) statusKey = 'Suy dinh dưỡng'; // for > 5y, low HFA is malnutrition
+  else if (bmi >= 25 || (wfhZ !== null && wfhZ > 2) || (wfaZ !== null && wfaZ > 2)) statusKey = 'Thừa cân/Béo phì';
+
+  // Energy
+  const { stdEnergy, targetEnergy, energyNote, energyNoteType, energyNoteIcon } =
+    calcEnergy(m, isBoy, weight, wfaZ, wfhZ, bmi);
+
+  // Macronutrients
+  let pCarb = 0.50, pPro = 0.20, pLipid = 0.30;
+  if (statusKey.includes('Béo phì') || statusKey.includes('Thừa cân')) {
+    pCarb = 0.35;
+    pPro = 0.35;
+  }
+  const carbG = Math.round(targetEnergy * pCarb / 4);
+  const proteinG = Math.round(targetEnergy * pPro / 4);
+  const lipidG = Math.round(targetEnergy * pLipid / 9);
+
+  // Lab assessments
+  const labs = assessLabs(m, isBoy);
+
+  // Menu key
+  const menuKey = `${ageKey}_${statusKey}`;
+  const menuData = MENU_DATA[menuKey] || MENU_DATA[`${ageKey}_Bình thường`] || {};
+  const menu = JSON.parse(JSON.stringify(menuData)); // deep copy
+
+  // Dynamic Macro-based Menu Processing
+  const mealRatios = { 'Sáng': 0.20, 'Phụ sáng': 0.10, 'Trưa': 0.25, 'Phụ chiều': 0.10, 'Tối': 0.25, 'Phụ tối': 0.10 };
+  
+  Object.keys(mealRatios).forEach(meal => {
+    const ratio = mealRatios[meal];
+    const mealKcal = Math.round(targetEnergy * ratio);
+    const mCarbG = carbG * ratio;
+    const mProG = proteinG * ratio;
+    const mLipidG = lipidG * ratio;
+    
+    if (Array.isArray(menu[meal])) {
+      menu[meal] = menu[meal].map(dish => {
+        if (dish === '—' || !dish) return dish;
+        const lowDish = dish.toLowerCase();
+        let details = '';
+        
+        // Is it a snack?
+        if (meal.includes('Phụ') || lowDish.includes('sữa') || lowDish.includes('trái cây') || lowDish.includes('hoa quả')) {
+           if (lowDish.includes('sữa f100') || lowDish.includes('sữa cao nl') || lowDish.includes('pedia')) {
+               let ml = Math.round((mealKcal / 1.0) / 10) * 10;
+               details = `<li>🥛 ${ml}ml sữa đặc trị</li>`;
+           } else if (lowDish.includes('sữa')) {
+               let ml = Math.round((mealKcal / 0.65) / 10) * 10;
+               if(ml > 250) { 
+                 details = `<li>🥛 200ml sữa</li><li>🍎 ${Math.round((mealKcal - 130)/0.5/5)*5}g trái cây/bánh</li>`;
+               } else {
+                 details = `<li>🥛 ${ml}ml sữa tươi/chua</li>`;
+               }
+           } else {
+               let g = Math.round((mealKcal / 0.5) / 10) * 10;
+               details = `<li>🍎 ${g}g trái cây tươi</li>`;
+           }
+        } else {
+           // Main meals
+           let carbName = 'cơm tẻ';
+           let carbIcon = '🍚';
+           let carbDensity = 0.28; // 28g carb per 100g cooked rice
+           
+           if (lowDish.includes('phở') || lowDish.includes('bún') || lowDish.includes('mì')) { carbName = 'bún/phở'; carbIcon = '🍜'; carbDensity = 0.20; }
+           else if (lowDish.includes('sữa hạt')) { carbName = 'sữa hạt'; carbIcon = '🌰'; carbDensity = 0.60; }
+           else if (lowDish.includes('cháo')) { carbName = 'cháo đặc'; carbIcon = '🍲'; carbDensity = 0.15; }
+           else if (lowDish.includes('xôi')) { carbName = 'xôi/nếp'; carbIcon = '🍙'; carbDensity = 0.40; }
+           else if (lowDish.includes('cơm lứt')) { carbName = 'cơm gạo lứt'; carbDensity = 0.25; }
+           else if (lowDish.includes('bánh mì')) { carbName = 'bánh mì'; carbIcon = '🥖'; carbDensity = 0.50; }
+           
+           let wCarb = Math.round((mCarbG / carbDensity) / 5) * 5;
+           
+           let proName = 'thịt/cá/trứng';
+           if (lowDish.includes('gà')) proName = 'thịt gà';
+           else if (lowDish.includes('bò')) proName = 'thịt bò';
+           else if (lowDish.includes('cá') || lowDish.includes('tôm') || lowDish.includes('mực') || lowDish.includes('cua')) proName = 'cá/tôm/hải sản';
+           else if (lowDish.includes('đậu phụ') || lowDish.includes('chay')) proName = 'đậu phụ';
+           else if (lowDish.includes('lợn') || lowDish.includes('heo') || lowDish.includes('sườn') || lowDish.includes('thịt băm')) proName = 'thịt lợn nạc';
+           
+           if (lowDish.includes('nướng') || lowDish.includes('áp chảo')) proName += ' (nướng/áp chảo ít dầu)';
+           
+           let proDensity = 0.20; // 20g pro per 100g cooked meat
+           if (proName === 'đậu phụ') proDensity = 0.10;
+           let wPro = Math.round((mProG / proDensity) / 5) * 5;
+           
+           // Fat
+           let fatFromMeat = wPro * 0.05; // rough estimate
+           if (statusKey.includes('Béo phì')) fatFromMeat = wPro * 0.02; // lean
+           else if (statusKey.includes('Suy dinh')) fatFromMeat = wPro * 0.08; // fatty
+           
+           if (lowDish.includes('nướng') || lowDish.includes('áp chảo')) fatFromMeat = wPro * 0.02; // very lean
+           let addedFat = mLipidG - fatFromMeat;
+           if (addedFat < 0) addedFat = 0;
+           let wFat = Math.round(addedFat);
+           
+           // Veggie
+           let wVeg = m < 24 ? 50 : m < 72 ? 80 : 120;
+           let vegName = 'rau xanh chín';
+           let vegIcon = '🥗';
+           if (lowDish.includes('salad')) { vegName = 'salad rau củ tươi'; wVeg = wVeg * 1.5; }
+           
+           details = `<li>${carbIcon} ${wCarb}g ${carbName}${lowDish.includes('sữa hạt') ? '' : ' chín'}</li>`;
+           if (!lowDish.includes('sữa hạt')) details += `<li>🥩 ${wPro}g ${proName} chín</li>`;
+           if(!lowDish.includes('cháo') && !lowDish.includes('sữa hạt')) details += `<li>${vegIcon} ${Math.round(wVeg)}g ${vegName}</li>`;
+           if(wFat > 2) {
+              if (statusKey.includes('Béo phì') || statusKey.includes('Thừa cân')) {
+                 details += `<li>🥜 ${wFat * 2}g hạt dinh dưỡng (óc chó, macca) thay dầu</li>`;
+              } else {
+                 details += `<li>🫒 ${wFat}ml dầu/mỡ</li>`;
+              }
+           }
+        }
+        
+        return `<div class="menu-dish-name">${dish}</div><ul class="menu-ingredients">${details}</ul><div class="menu-qty-total">Tổng: ${mealKcal} kcal</div>`;
+      });
+    }
+  });
+
+  return {
+    name, dob, examDate, weight, height, bmi, muac, gender: state.gender,
+    months: m, whoWeight, whoHeight,
+    wfa, hfa, wfh, wfaZ, hfaZ, wfhZ, muacStatus,
+    stdEnergy, targetEnergy, energyNote, energyNoteType, energyNoteIcon,
+    carbG, proteinG, lipidG,
+    labs, menu, menuKey, statusKey,
+    tuvan: state.tuvan,
+    revisit: document.getElementById('inp_revisit').value,
+  };
+}
+
+function classifyZ(z, type) {
+  if (type === 'wfa') {
+    if (z < -3) return 'Nhẹ cân nặng';
+    if (z < -2) return 'Nhẹ cân';
+    if (z > 2) return 'Thừa cân';
+    return 'Bình thường';
+  }
+  if (type === 'hfa') {
+    if (z < -3) return 'Thấp còi nặng';
+    if (z < -2) return 'Thấp còi';
+    if (z > 2) return 'Cao hơn chuẩn';
+    return 'Bình thường';
+  }
+  if (type === 'wfh') {
+    if (z < -3) return 'SDD cấp nặng';
+    if (z < -2) return 'Suy dinh dưỡng cấp';
+    if (z > 3) return 'Béo phì';
+    if (z > 2) return 'Thừa cân';
+    return 'Bình thường';
+  }
+}
+
+function calcEnergy(m, isBoy, weight, wfaZ, wfhZ, bmi) {
+  let stdEnergy = 1500;
+  for (const [minM, maxM, mKcal, fKcal] of ENERGY_TABLE) {
+    if (m >= minM && m <= maxM) {
+      stdEnergy = isBoy ? mKcal : fKcal;
+      break;
+    }
+  }
+
+  let targetEnergy = stdEnergy;
+  let energyNote = null, energyNoteType = 'info', energyNoteIcon = 'ℹ️';
+
+  if (bmi >= 25 || wfaZ > 2 || wfhZ > 2) {
+    targetEnergy = Math.round(stdEnergy * 0.80);
+    energyNote = `Giảm 20% năng lượng do thừa cân/béo phì. Hạn chế béo bão hòa <7%, cholesterol <200mg/ngày. Tăng vận động ≥60 phút/ngày.`;
+    energyNoteType = 'warn'; energyNoteIcon = '⚠️';
+  } else if (wfhZ < -2 || wfaZ < -2) {
+    if (m < 60) {
+      if (weight < 10) targetEnergy = Math.round(weight * 100);
+      else if (weight < 20) targetEnergy = Math.round(1000 + 50 * (weight - 10));
+      else targetEnergy = Math.round(1000 + 20 * (weight - 20));
+    } else {
+      targetEnergy = stdEnergy + 300;
+    }
+    energyNote = `Tăng năng lượng bắt kịp (catch-up). Protein ${m < 12 ? '3–4' : '2–3'}g/kg/ngày. Bổ sung vi chất Zn, Fe, Vit A, D.`;
+    energyNoteType = 'danger'; energyNoteIcon = '🚨';
+  }
+
+  return { stdEnergy, targetEnergy, energyNote, energyNoteType, energyNoteIcon };
+}
+
+function assessLabs(m, isBoy) {
+  const ca = parseFloat(document.getElementById('inp_ca').value);
+  const vitd = parseFloat(document.getElementById('inp_vitd').value);
+  const zn = parseFloat(document.getElementById('inp_zn').value);
+  const hb = parseFloat(document.getElementById('inp_hb').value);
+  const fe = parseFloat(document.getElementById('inp_fe').value);
+  const ferritin = parseFloat(document.getElementById('inp_ferritin').value);
+  const chol = parseFloat(document.getElementById('inp_chol').value);
+  const tg = parseFloat(document.getElementById('inp_tg').value);
+
+  const yrs = Math.floor(m / 12);
+  const hbThreshold = m < 24 ? 105 : m < 60 ? 110 : m < 144 ? 115 : 120;
+  const ferritinThreshold = m <= 60 ? 12 : 15;
+  const tgThreshold = m < 120 ? 100 : 130;
+
+  const labs = [];
+
+  if (!isNaN(ca)) labs.push({
+    name: 'Calci toàn phần', icon: '🦴', value: ca, unit: 'mmol/L',
+    normal: '2.1–2.6',
+    status: ca < 2.1 ? 'deficit' : ca > 2.6 ? 'excess' : 'ok',
+    diagnosis: ca < 2.1 ? 'Thiếu Calci (hạ calci huyết)' : ca > 2.6 ? 'Tăng calci huyết' : 'Bình thường',
+    recommendation: ca < 2.1 ? 'Bổ sung Calci 500–1000mg/ngày. Uống nhiều sữa, ăn cua, tôm, cá nhỏ.' : ''
+  });
+
+  if (!isNaN(vitd)) labs.push({
+    name: 'Vitamin D 25(OH)D', icon: '☀️', value: vitd, unit: 'ng/mL',
+    normal: '>20',
+    status: vitd < 12 ? 'deficit' : vitd < 20 ? 'deficit' : 'ok',
+    diagnosis: vitd < 12 ? 'Thiếu Vitamin D nặng (<12 ng/mL)' : vitd < 20 ? 'Thiếu Vitamin D nhẹ (12–20 ng/mL)' : 'Bình thường',
+    recommendation: vitd < 20 ? 'Bổ sung Vitamin D 2000–5000 IU/ngày trong 6–12 tuần, sau duy trì 400–1000 IU/ngày. Tắm nắng sáng 15–20 phút/ngày.' : ''
+  });
+
+  if (!isNaN(zn)) labs.push({
+    name: 'Kẽm huyết thanh', icon: '⚗️', value: zn, unit: 'µmol/L',
+    normal: '10.7–20.0',
+    status: zn < 10.7 ? 'deficit' : 'ok',
+    diagnosis: zn < 10.7 ? 'Thiếu Kẽm' : 'Bình thường',
+    recommendation: zn < 10.7 ? 'Bổ sung Kẽm 10–20mg/ngày trong 2–3 tháng. Tăng thịt bò, hải sản, hạt bí.' : ''
+  });
+
+  if (!isNaN(hb)) labs.push({
+    name: 'Hemoglobin (Hb)', icon: '🩸', value: hb, unit: 'g/L',
+    normal: `≥${hbThreshold}`,
+    status: hb < hbThreshold ? 'deficit' : 'ok',
+    diagnosis: hb < hbThreshold ? `Thiếu máu (Hb < ${hbThreshold} g/L)` : 'Bình thường',
+    recommendation: hb < hbThreshold ? 'Bổ sung Sắt 3–6mg/kg/ngày kết hợp Vitamin C. Ăn thịt đỏ, gan, rau màu xanh đậm.' : ''
+  });
+
+  if (!isNaN(fe)) labs.push({
+    name: 'Sắt huyết thanh', icon: '🔩', value: fe, unit: 'µmol/L',
+    normal: '11.0–27.0',
+    status: fe < 11 ? 'deficit' : fe > 27 ? 'excess' : 'ok',
+    diagnosis: fe < 11 ? 'Thiếu sắt huyết thanh' : fe > 27 ? 'Sắt huyết thanh cao' : 'Bình thường',
+    recommendation: fe < 11 ? 'Bổ sung Sắt kết hợp với Vitamin C, tránh uống cùng trà/cà phê.' : ''
+  });
+
+  if (!isNaN(ferritin)) labs.push({
+    name: 'Ferritin (Sắt dự trữ)', icon: '🏦', value: ferritin, unit: 'ng/mL',
+    normal: `≥${ferritinThreshold}`,
+    status: ferritin < ferritinThreshold ? 'deficit' : 'ok',
+    diagnosis: ferritin < ferritinThreshold ? `Thiếu Sắt dự trữ (Ferritin < ${ferritinThreshold} ng/mL)` : 'Bình thường',
+    recommendation: ferritin < ferritinThreshold ? 'Bổ sung Sắt nguyên tố 3–6mg/kg/ngày trong 2–3 tháng + Vitamin C.' : ''
+  });
+
+  if (!isNaN(chol)) labs.push({
+    name: 'Cholesterol toàn phần', icon: '💛', value: chol, unit: 'mg/dL',
+    normal: '<170',
+    status: chol >= 200 ? 'excess' : chol >= 170 ? 'excess' : 'ok',
+    diagnosis: chol >= 200 ? 'Tăng Cholesterol (≥200 mg/dL)' : chol >= 170 ? 'Cholesterol ranh giới (170–199 mg/dL)' : 'Bình thường',
+    recommendation: chol >= 170 ? 'Giảm béo bão hòa <7% tổng năng lượng. Cholesterol <200mg/ngày. Tăng hoạt động thể chất.' : ''
+  });
+
+  if (!isNaN(tg)) labs.push({
+    name: 'Triglycerid', icon: '🫀', value: tg, unit: 'mg/dL',
+    normal: `<${tgThreshold}`,
+    status: tg >= tgThreshold ? 'excess' : 'ok',
+    diagnosis: tg >= tgThreshold ? `Tăng Triglycerid (≥${tgThreshold} mg/dL)` : 'Bình thường',
+    recommendation: tg >= tgThreshold ? 'Giảm đường đơn, tăng omega-3 (cá hồi, hạt lanh). Hoạt động thể lực >60 phút/ngày.' : ''
+  });
+
+  return labs;
+}
+
+// ============================================================
+// VIEW RESULT
+// ============================================================
+function viewResult() {
+  const result = calculate();
+  if (!result) {
+    showToast('Vui lòng nhập đầy đủ: họ tên, ngày sinh, ngày khám, cân nặng và chiều cao!', 'error');
+    return;
+  }
+  state.currentResult = result;
+  renderResult(result);
+  switchTabById('result');
+}
+
+function switchTabById(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  const btns = document.querySelectorAll('.tab-btn');
+  const tabMap = { input: 0, result: 1, log: 2 };
+  if (btns[tabMap[name]]) btns[tabMap[name]].classList.add('active');
+}
+
+function renderResult(r) {
+  const container = document.getElementById('result-container');
+  const days = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
+  const meals = ['Sáng', 'Phụ sáng', 'Trưa', 'Phụ chiều', 'Tối', 'Phụ tối'];
+          const mealTimes = { 'Sáng': '07:00', 'Phụ sáng': '09:30', 'Trưa': '12:00', 'Phụ chiều': '15:30', 'Tối': '18:30', 'Phụ tối': '20:30' };
+
+  // Build status badge
+  const statusBadge = (s) => {
+    const cls = s.includes('nặng') ? 'badge-danger' :
+      s.includes('Nhẹ cân') || s.includes('Thấp còi') || s.includes('SDD') ? 'badge-warn' :
+      s.includes('Thừa') || s.includes('Béo') ? 'badge-obesity' : 'badge-normal';
+    return `<span class="badge ${cls}">${s}</span>`;
+  };
+
+  // Lab section
+  const labHtml = r.labs.length > 0 ? `
+    <div class="card fade-in" style="margin-top:20px;">
+      <div class="card-header">
+        <div class="icon" style="background:#FFF8E1;">🧪</div>
+        <h3>Đánh Giá Xét Nghiệm Vi Chất</h3>
+      </div>
+      <div class="card-body">
+        ${r.labs.map(lab => `
+          <div class="micro-item ${lab.status}">
+            <div class="micro-icon">${lab.icon}</div>
+            <div class="micro-info">
+              <div class="micro-name">${lab.name}</div>
+              <div class="micro-detail">Giá trị bình thường: ${lab.normal} ${lab.unit} | Kết quả: <strong>${lab.value} ${lab.unit}</strong></div>
+              <div style="font-weight:600;font-size:12px;margin-top:4px;color:${lab.status === 'ok' ? 'var(--success)' : lab.status === 'deficit' ? 'var(--danger)' : 'var(--warning)'};">${lab.diagnosis}</div>
+              ${lab.recommendation ? `<div class="micro-rec">💊 ${lab.recommendation}</div>` : ''}
+            </div>
+            <div class="micro-val" style="color:${lab.status === 'ok' ? 'var(--success)' : lab.status === 'deficit' ? 'var(--danger)' : 'var(--warning)'};">${lab.value}<div style="font-size:10px;font-weight:400;">${lab.unit}</div></div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  // Menu html
+  const menuHtml = `
+    <div style="overflow-x:auto;">
+      <table class="menu-table">
+        <thead>
+          <tr>
+            <th style="min-width:100px;">Bữa ăn</th>
+            ${days.map(d => `<th style="min-width:140px;">${d}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${meals.map(meal => `
+            <tr>
+              <td class="meal-label">${meal}<br><span style="font-size:10px;color:var(--text-muted);">${mealTimes[meal]}</span></td>
+              ${days.map((d, i) => `<td>${Array.isArray(r.menu[meal]) ? (r.menu[meal][i] || '—') : (r.menu[meal] || '—')}</td>`).join('')}
+            </tr>
+          `).join('')}
+          <tr style="background:#E8F5E9;font-weight:700;color:#2E7D32;">
+            <td class="meal-label">Tổng cộng</td>
+            <td colspan="7" style="text-align:center;">~ ${r.targetEnergy} kcal / ngày (100% NL Mục Tiêu)</td>
+          </tr>
+          <tr>
+            <td class="meal-label">Lưu ý</td>
+            <td colspan="7" style="font-style:italic;color:var(--text-secondary);">${r.menu['Ghi chú'] || ''}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  container.innerHTML = `
+    <!-- HERO -->
+    <div class="result-hero fade-in">
+      <div class="result-hero-name">🏥 ${r.name}</div>
+      <div class="result-hero-meta">
+        ${r.gender} | ${r.months} tháng tuổi | Ngày khám: ${r.examDate}
+        ${r.revisit ? ` | Tái khám: ${r.revisit}` : ''}
+        ${r.tuvan === 'Có' ? ' | ✅ Đã tư vấn dinh dưỡng' : ''}
+      </div>
+      <div class="result-hero-stats">
+        <div class="hero-stat"><div class="val">${r.weight}</div><div class="lbl">Cân nặng (kg)</div></div>
+        <div class="hero-divider"></div>
+        <div class="hero-stat"><div class="val">${r.height}</div><div class="lbl">Chiều cao (cm)</div></div>
+        <div class="hero-divider"></div>
+        <div class="hero-stat"><div class="val">${r.bmi}</div><div class="lbl">BMI</div></div>
+        <div class="hero-divider"></div>
+        <div class="hero-stat"><div class="val">${r.targetEnergy}</div><div class="lbl">kcal/ngày</div></div>
+        <div class="hero-divider"></div>
+        <div class="hero-stat"><div class="val">${r.months}T</div><div class="lbl">Tuổi</div></div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="gap:20px;">
+      <!-- GROWTH STATUS -->
+      <div class="card fade-in">
+        <div class="card-header">
+          <div class="icon" style="background:#E8F5E9;">📊</div>
+          <h3>Đánh Giá Tình Trạng Dinh Dưỡng</h3>
+        </div>
+        <div class="card-body">
+          <table class="data-table">
+            <thead><tr><th>Chỉ số</th><th>Kết quả</th><th>Tình trạng</th></tr></thead>
+            <tbody>
+              <tr><td>Cân nặng/Tuổi (WHO)</td><td>${r.weight} kg (CĐ: ${r.whoWeight ? r.whoWeight + ' kg' : 'N/A'})</td><td>${statusBadge(r.wfa)}</td></tr>
+              <tr><td>Chiều cao/Tuổi (WHO)</td><td>${r.height} cm (CĐ: ${r.whoHeight} cm)</td><td>${statusBadge(r.hfa)}</td></tr>
+              <tr><td>Cân nặng/Chiều cao (WHO)</td><td>Z-score: ${r.wfhZ !== null ? r.wfhZ.toFixed(2) : 'N/A'}</td><td>${statusBadge(r.wfh)}</td></tr>
+              <tr><td>BMI</td><td>${r.bmi} kg/m²</td><td>${r.bmi < 18.5 ? statusBadge('Nhẹ cân') : r.bmi >= 30 ? statusBadge('Béo phì') : r.bmi >= 25 ? statusBadge('Thừa cân') : statusBadge('Bình thường')}</td></tr>
+              ${r.muacStatus ? `<tr><td>MUAC (vòng cánh tay)</td><td>${r.muac} cm</td><td>${statusBadge(r.muacStatus.includes('Bình') ? 'Bình thường' : r.muacStatus.includes('NẶNG') ? 'SDD cấp nặng' : 'SDD cấp vừa')}</td></tr>` : ''}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ENERGY & MACROS -->
+      <div class="card fade-in">
+        <div class="card-header">
+          <div class="icon" style="background:#FFF3E0;">⚡</div>
+          <h3>Nhu Cầu Năng Lượng & Đại Chất</h3>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <div class="metric-card info">
+              <div class="metric-label">NL chuẩn (WHO)</div>
+              <div class="metric-value" style="color:var(--info);">${r.stdEnergy}</div>
+              <div class="metric-sub">kcal/ngày theo tuổi</div>
+            </div>
+            <div class="metric-card ${r.targetEnergy < r.stdEnergy ? 'warning' : r.targetEnergy > r.stdEnergy ? 'danger' : 'normal'}">
+              <div class="metric-label">NL cá nhân hóa</div>
+              <div class="metric-value" style="color:var(--primary);">${r.targetEnergy}</div>
+              <div class="metric-sub">kcal/ngày</div>
+            </div>
+          </div>
+          ${r.energyNote ? `<div class="info-box ${r.energyNoteType}" style="margin-bottom:12px;"><span>${r.energyNoteIcon}</span><p>${r.energyNote}</p></div>` : ''}
+          <div class="macro-chart" style="height:24px;border-radius:12px;">
+            <div class="macro-seg" style="flex:55;background:#FF6F00;font-size:11px;">Bột 55%</div>
+            <div class="macro-seg" style="flex:15;background:#0277BD;font-size:11px;">Đạm 15%</div>
+            <div class="macro-seg" style="flex:30;background:#2E7D32;font-size:11px;">Béo 30%</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px;">
+            <div style="text-align:center;padding:12px;background:#FFF8E1;border-radius:10px;">
+              <div style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:#FF6F00;">${r.carbG}g</div>
+              <div style="font-size:11px;color:var(--text-muted);">Bột đường</div>
+              <div style="font-size:10px;color:var(--text-muted);">${r.carbG * 4} kcal (55%)</div>
+            </div>
+            <div style="text-align:center;padding:12px;background:#E1F5FE;border-radius:10px;">
+              <div style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:#0277BD;">${r.proteinG}g</div>
+              <div style="font-size:11px;color:var(--text-muted);">Đạm (Protein)</div>
+              <div style="font-size:10px;color:var(--text-muted);">${r.proteinG * 4} kcal (15%)</div>
+            </div>
+            <div style="text-align:center;padding:12px;background:#E8F5E9;border-radius:10px;">
+              <div style="font-family:'Outfit',sans-serif;font-size:22px;font-weight:800;color:#2E7D32;">${r.lipidG}g</div>
+              <div style="font-size:11px;color:var(--text-muted);">Chất béo</div>
+              <div style="font-size:10px;color:var(--text-muted);">${r.lipidG * 9} kcal (30%)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    ${labHtml}
+
+    <!-- FOOD GROUPS -->
+    <div class="card fade-in" style="margin-top:20px;">
+      <div class="card-header">
+        <div class="icon" style="background:#F3E5F5;">🥗</div>
+        <h3>Nhóm Thực Phẩm Khuyến Nghị</h3>
+      </div>
+      <div class="card-body">
+        <div class="grid-3" style="gap:12px;">
+          <div style="padding:14px;background:#FFF8E1;border-radius:10px;border-left:4px solid #FF6F00;">
+            <div style="font-weight:700;color:#FF6F00;margin-bottom:8px;">🌾 Bột đường - ${r.carbG}g/ngày</div>
+            <p style="font-size:12px;line-height:1.6;">Gạo, ngũ cốc, khoai lang. ${r.statusKey.includes('Béo phì') ? '<br>⚠️ Ưu tiên ngũ cốc nguyên hạt, gạo lứt. Tránh đường tinh luyện.' : 'Đa dạng các loại bột đường.'}</p>
+          </div>
+          <div style="padding:14px;background:#E1F5FE;border-radius:10px;border-left:4px solid #0277BD;">
+            <div style="font-weight:700;color:#0277BD;margin-bottom:8px;">🥩 Đạm - ${r.proteinG}g/ngày</div>
+            <p style="font-size:12px;line-height:1.6;">Thịt, cá, trứng, sữa. ${r.statusKey.includes('Suy dinh dưỡng') ? '<br>⭐ Tăng đạm động vật, chọn thịt có lẫn mỡ, cá béo.' : r.statusKey.includes('Béo phì') ? '<br>⚠️ Chọn thịt nạc (ức gà), cá nạc, sữa tách béo.' : ''}</p>
+          </div>
+          <div style="padding:14px;background:#E8F5E9;border-radius:10px;border-left:4px solid #2E7D32;">
+            <div style="font-weight:700;color:#2E7D32;margin-bottom:8px;">🫒 Chất béo - ${r.lipidG}g/ngày</div>
+            <p style="font-size:12px;line-height:1.6;">${r.statusKey.includes('Suy dinh dưỡng') ? '⭐ Bắt buộc thêm 5-10ml mỡ lợn/dầu ăn vào cháo/canh. Khuyến khích bơ, phô mai.' : r.statusKey.includes('Béo phì') ? '⚠️ Tuyệt đối tránh đồ chiên xào nhiều mỡ. Ưu tiên dầu oliu, mỡ cá béo.' : 'Dầu thực vật, bơ, hạt.'}</p>
+          </div>
+        </div>
+        <div style="margin-top:12px;padding:12px;background:var(--primary-light);border-radius:10px;font-size:13px;">
+          <strong style="color:var(--primary-dark);">🥦 Bổ sung vi chất qua thực phẩm:</strong><br>
+          ${r.labs.some(l => l.name.includes('Sắt') && l.status==='deficit') ? '<span style="color:#D32F2F;">🩸 <strong>Thiếu Sắt:</strong> Tăng cường gan lợn/gà, huyết, thịt bò thẫm màu, mộc nhĩ, rau dền đỏ.</span><br>' : ''}
+          ${r.labs.some(l => l.name.includes('Calci') && l.status==='deficit') ? '<span style="color:#1976D2;">🦴 <strong>Thiếu Canxi:</strong> Ăn tôm tép nhỏ nguyên vỏ, cua đồng, cá nhỏ, phô mai bò.</span><br>' : ''}
+          ${r.labs.some(l => l.name.includes('Kẽm') && l.status==='deficit') ? '<span style="color:#F57C00;">⚗️ <strong>Thiếu Kẽm:</strong> Hàu, hến, thịt bò nạc, lòng đỏ trứng.</span><br>' : ''}
+          <span style="color:#388E3C;">🥗 Cung cấp ≥300g rau xanh/ngày. Hoa quả ăn múi/miếng thay vì chỉ ép nước.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7-DAY MENU -->
+    <div class="card fade-in" style="margin-top:20px;">
+      <div class="card-header">
+        <div class="icon" style="background:#E8F5E9;">📅</div>
+        <h3>Thực Đơn 7 Ngày Tham Khảo</h3>
+        <span style="margin-left:auto;font-size:11px;color:var(--text-muted);">
+          Nhóm tuổi: ${r.months < 12 ? '6–12 tháng' : r.months < 24 ? '12–24 tháng' : r.months < 72 ? '3–5 tuổi' : '≥6 tuổi'} | ${r.statusKey}
+        </span>
+      </div>
+      <div class="card-body" style="padding:12px;">
+        ${menuHtml}
+        <div style="margin-top:12px;font-size:12px;color:var(--text-secondary);font-style:italic;">
+          * Thực đơn mang tính tham khảo. Điều chỉnh theo sở thích, dị ứng và điều kiện gia đình. Tham khảo thêm chuyên gia dinh dưỡng.
+        </div>
+      </div>
+    </div>
+
+    <!-- CLINICAL NOTES -->
+    <div class="card fade-in" style="margin-top:20px;">
+      <div class="card-header">
+        <div class="icon" style="background:#FCE4EC;">📝</div>
+        <h3>Ghi Chú Lâm Sàng</h3>
+      </div>
+      <div class="card-body">
+        <div class="grid-2" style="gap:12px;">
+          <div class="info-box ${r.wfaZ < -2 || r.hfaZ < -3 ? 'danger' : r.wfhZ > 2 ? 'warn' : 'success'}">
+            <span>${r.wfaZ < -2 || r.hfaZ < -3 ? '🚨' : r.wfhZ > 2 ? '⚠️' : '✅'}</span>
+            <p><strong>Tình trạng dinh dưỡng tổng thể:</strong><br>
+            CN/Tuổi: ${r.wfa} | CC/Tuổi: ${r.hfa} | CN/CC: ${r.wfh}.<br>
+            ${r.wfaZ < -3 ? 'Suy dinh dưỡng thể nhẹ cân nặng – cần can thiệp dinh dưỡng ngay.' :
+              r.hfaZ < -3 ? 'Thấp còi nặng – cần theo dõi và can thiệp dài hạn.' :
+              r.wfhZ > 3 ? 'Béo phì – cần chế độ ăn và vận động kiểm soát.' :
+              'Theo dõi định kỳ 3 tháng/lần.'}</p>
+          </div>
+          <div class="info-box info">
+            <span>📅</span>
+            <p><strong>Lịch theo dõi:</strong><br>
+            ${r.months < 6 ? 'Theo dõi mỗi tháng' : r.months < 24 ? 'Theo dõi 2 tháng/lần' : 'Theo dõi 3 tháng/lần'}.<br>
+            ${r.revisit ? `Ngày tái khám dự kiến: <strong>${r.revisit}</strong>` : 'Hẹn tái khám sau 3 tháng.'}<br>
+            Tư vấn dinh dưỡng: <strong>${r.tuvan}</strong></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('result-actions').style.display = 'flex';
+}
+
+// ============================================================
+// SAVE PATIENT
+// ============================================================
+function savePatient() {
+  const result = calculate();
+  if (!result) {
+    showToast('Vui lòng nhập đầy đủ thông tin bệnh nhân trước khi lưu!', 'error');
+    return;
+  }
+
+  const labAssessment = result.labs
+    .filter(l => l.status !== 'ok')
+    .map(l => l.diagnosis)
+    .join(', ') || 'Bình thường';
+
+  const record = {
+    id: Date.now(),
+    stt: patientLog.length + 1,
+    examDate: result.examDate,
+    name: result.name,
+    dob: result.dob,
+    months: result.months,
+    gender: result.gender,
+    weight: result.weight,
+    height: result.height,
+    bmi: result.bmi,
+    wfa: result.wfa,
+    hfa: result.hfa,
+    wfh: result.wfh,
+    stdEnergy: result.stdEnergy,
+    targetEnergy: result.targetEnergy,
+    labAssessment,
+    revisit: result.revisit,
+    tuvan: result.tuvan,
+  };
+
+  patientLog.push(record);
+  localStorage.setItem('nhi_khoa_log', JSON.stringify(patientLog));
+  renderLog();
+  showToast(`✅ Đã lưu hồ sơ bệnh nhân "${result.name}" vào nhật ký!`, 'success');
+}
+
+function renderLog() {
+  const tbody = document.getElementById('log-tbody');
+  if (patientLog.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="14"><div class="log-empty"><div class="icon">📭</div><p>Chưa có hồ sơ nào.<br>Nhập liệu và bấm <strong>Lưu Hồ Sơ</strong> để bắt đầu.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = patientLog.slice().reverse().map((r, i) => {
+    const statusColor = r.wfh.includes('nặng') ? '#C62828' : r.wfh === 'Bình thường' ? '#2E7D32' : '#F57F17';
+    return `
+      <tr>
+        <td>${r.stt}</td>
+        <td>${r.examDate}</td>
+        <td style="font-weight:600;">${r.name}</td>
+        <td>${r.months}T</td>
+        <td>${r.gender}</td>
+        <td>${r.weight}</td>
+        <td>${r.height}</td>
+        <td>${r.bmi}</td>
+        <td><span style="color:${statusColor};font-weight:600;font-size:12px;">${r.wfh}</span></td>
+        <td>${r.stdEnergy} kcal</td>
+        <td>${r.targetEnergy} kcal</td>
+        <td style="font-size:11px;max-width:200px;">${r.labAssessment}</td>
+        <td>${r.revisit || '—'}</td>
+        <td><button class="btn-danger" onclick="deleteRecord(${r.id})">🗑️</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function deleteRecord(id) {
+  patientLog = patientLog.filter(r => r.id !== id);
+  localStorage.setItem('nhi_khoa_log', JSON.stringify(patientLog));
+  renderLog();
+  showToast('Đã xoá hồ sơ.', 'error');
+}
+
+function clearLog() {
+  if (!confirm('Bạn có chắc muốn xoá toàn bộ nhật ký bệnh nhân?')) return;
+  patientLog = [];
+  localStorage.setItem('nhi_khoa_log', JSON.stringify(patientLog));
+  renderLog();
+  showToast('Đã xoá toàn bộ nhật ký.', 'error');
+}
+
+function exportCSV() {
+  if (patientLog.length === 0) {
+    showToast('Không có dữ liệu để xuất!', 'error');
+    return;
+  }
+  const headers = ['STT','Ngày khám','Họ tên','DOB','Tuổi(T)','Giới','CN(kg)','CC(cm)','BMI','CN/Tuổi','CC/Tuổi','CN/CC','NL chuẩn','NL cá nhân','Đánh giá vi chất','Ngày TK','Tư vấn'];
+  const rows = patientLog.map(r => [r.stt,r.examDate,r.name,r.dob,r.months,r.gender,r.weight,r.height,r.bmi,r.wfa,r.hfa,r.wfh,r.stdEnergy,r.targetEnergy,r.labAssessment,r.revisit||'',r.tuvan]);
+  const csv = [headers, ...rows].map(row => row.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `NhatKyBenhNhan_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('📥 Đã xuất file CSV thành công!', 'success');
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg, type = '') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = `toast show ${type}`;
+  setTimeout(() => { toast.className = 'toast'; }, 3500);
+}
+
+// ============================================================
+// EXPORT PDF
+// ============================================================
+function exportPDF() {
+  const r = state.currentResult;
+  if (!r) {
+    showToast('Vui lòng xem Kết Quả trước khi xuất PDF!', 'error');
+    return;
+  }
+
+  document.getElementById('pdf-overlay').style.display = 'flex';
+
+  const days = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
+  const meals = ['Sáng', 'Phụ sáng', 'Trưa', 'Phụ chiều', 'Tối', 'Phụ tối'];
+          const mealTimes = { 'Sáng': '07:00', 'Phụ sáng': '09:30', 'Trưa': '12:00', 'Phụ chiều': '15:30', 'Tối': '18:30', 'Phụ tối': '20:30' };
+
+  const badgeCls = s =>
+    s.includes('nặng') || s.includes('SDD') ? 'pdf-badge-bad' :
+    s.includes('cân') || s.includes('còi') || s.includes('Thừa') || s.includes('Béo') ? 'pdf-badge-warn' :
+    'pdf-badge-ok';
+
+  const ageLabel = r.months < 12 ? '6–12 tháng' : r.months < 24 ? '12–24 tháng' : r.months < 72 ? '3–5 tuổi' : '≥6 tuổi';
+
+  // Lab section html
+  const labHtml = r.labs.length > 0 ? `
+    <div class="pdf-section">
+      <div class="pdf-section-title">🧪 Kết Quả Xét Nghiệm Vi Chất</div>
+      <div class="pdf-grid2" style="gap:6px;">
+        ${r.labs.map(lab => `
+          <div class="pdf-lab-item ${lab.status === 'ok' ? 'ok' : lab.status === 'deficit' ? 'bad' : 'excess'}">
+            <div style="flex:1;">
+              <div class="pdf-lab-name">${lab.icon} ${lab.name}</div>
+              <div style="font-size:9px;color:#616161;">Bình thường: ${lab.normal} ${lab.unit}</div>
+              <div style="font-size:9px;font-weight:600;color:${lab.status === 'ok' ? '#2E7D32' : lab.status === 'deficit' ? '#C62828' : '#F57F17'};margin-top:2px;">${lab.diagnosis}</div>
+              ${lab.recommendation ? `<div style="font-size:8.5px;color:#424242;margin-top:3px;line-height:1.4;">${lab.recommendation}</div>` : ''}
+            </div>
+            <div class="pdf-lab-val" style="color:${lab.status === 'ok' ? '#2E7D32' : lab.status === 'deficit' ? '#C62828' : '#F57F17'};">
+              ${lab.value}<span style="font-size:8px;font-weight:400;display:block;text-align:right;">${lab.unit}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  const html = `
+  <div class="pdf-page">
+
+    <!-- HEADER -->
+    <div class="pdf-header">
+      <div class="pdf-header-logo">🏥</div>
+      <div class="pdf-header-title">
+        <h1>PHIẾU ĐÁNH GIÁ DINH DƯỠNG NHI KHOA</h1>
+        <p>Theo tiêu chuẩn WHO 2006/2007 · Quyết định 3777/QĐ-BYT-2024</p>
+      </div>
+      <div class="pdf-header-date">
+        <div style="font-size:16px;">📅</div>
+        <div>Ngày khám: <strong>${r.examDate}</strong></div>
+        <div>Xuất lúc: ${new Date().toLocaleString('vi-VN')}</div>
+      </div>
+    </div>
+
+    <!-- PATIENT BAND -->
+    <div class="pdf-patient-band">
+      <div class="pf">
+        <div class="pf-label">Họ và tên</div>
+        <div class="pf-value" style="font-size:15px;">${r.name}</div>
+      </div>
+      <div class="pf">
+        <div class="pf-label">Ngày sinh</div>
+        <div class="pf-value">${r.dob}</div>
+        <div style="font-size:9px;color:#616161;">Tuổi: ${r.months} tháng</div>
+      </div>
+      <div class="pf">
+        <div class="pf-label">Giới tính</div>
+        <div class="pf-value">${r.gender === 'Nam' ? '♂ Nam' : '♀ Nữ'}</div>
+        <div style="font-size:9px;color:#616161;">Nhóm: ${ageLabel}</div>
+      </div>
+      <div class="pf">
+        <div class="pf-label">Ngày tái khám</div>
+        <div class="pf-value">${r.revisit || '—'}</div>
+        <div style="font-size:9px;color:#616161;">Tư vấn: ${r.tuvan}</div>
+      </div>
+    </div>
+
+    <!-- ANTHROPOMETRIC -->
+    <div class="pdf-section">
+      <div class="pdf-section-title">📏 Chỉ Số Nhân Trắc & So Sánh Chuẩn WHO</div>
+      <div class="pdf-grid4" style="margin-bottom:10px;">
+        <div class="pdf-stat-box teal">
+          <div class="pdf-stat-label">Cân nặng</div>
+          <div class="pdf-stat-value">${r.weight} <span style="font-size:12px;">kg</span></div>
+          <div class="pdf-stat-sub">Chuẩn WHO: ${r.whoWeight} kg</div>
+          <div style="margin-top:4px;"><span class="pdf-badge ${badgeCls(r.wfa)}">${r.wfa}</span></div>
+        </div>
+        <div class="pdf-stat-box teal">
+          <div class="pdf-stat-label">Chiều cao</div>
+          <div class="pdf-stat-value">${r.height} <span style="font-size:12px;">cm</span></div>
+          <div class="pdf-stat-sub">Chuẩn WHO: ${r.whoHeight} cm</div>
+          <div style="margin-top:4px;"><span class="pdf-badge ${badgeCls(r.hfa)}">${r.hfa}</span></div>
+        </div>
+        <div class="pdf-stat-box ${r.bmi < 18.5 ? 'red' : r.bmi >= 25 ? 'orange' : 'teal'}">
+          <div class="pdf-stat-label">BMI</div>
+          <div class="pdf-stat-value">${r.bmi} <span style="font-size:12px;">kg/m²</span></div>
+          <div class="pdf-stat-sub">${r.bmi < 18.5 ? 'Thấp hơn chuẩn' : r.bmi >= 30 ? 'Béo phì' : r.bmi >= 25 ? 'Thừa cân' : 'Bình thường'}</div>
+        </div>
+        <div class="pdf-stat-box ${r.wfhZ !== null && r.wfhZ < -2 ? 'red' : r.wfhZ !== null && r.wfhZ > 2 ? 'orange' : 'teal'}">
+          <div class="pdf-stat-label">CN/Chiều cao</div>
+          <div class="pdf-stat-value" style="font-size:14px;">${r.wfhZ !== null ? r.wfhZ.toFixed(2) + ' <span style="font-size:10px;">Z</span>' : 'N/A'}</div>
+          <div style="margin-top:4px;"><span class="pdf-badge ${badgeCls(r.wfh)}">${r.wfh}</span></div>
+          ${r.muacStatus ? `<div style="font-size:8px;color:#616161;margin-top:2px;">MUAC: ${r.muac}cm – ${r.muacStatus.includes('Bình') ? 'BT' : r.muacStatus.includes('NẶNG') ? 'SDD nặng' : 'SDD vừa'}</div>` : ''}
+        </div>
+      </div>
+
+      <table class="pdf-table">
+        <thead>
+          <tr>
+            <th>Chỉ số</th><th>Kết quả</th><th>Chuẩn WHO</th><th>Chênh lệch</th><th>Phân loại</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Cân nặng / Tuổi</strong></td>
+            <td>${r.weight} kg</td>
+            <td>${r.whoWeight !== null ? r.whoWeight + ' kg' : 'N/A'}</td>
+            <td style="color:${r.whoWeight !== null && r.weight < r.whoWeight ? '#C62828' : '#2E7D32'};font-weight:700;">
+              ${r.whoWeight !== null ? (r.weight > r.whoWeight ? '+' : '') + (r.weight - r.whoWeight).toFixed(1) + ' kg' : '-'}
+            </td>
+            <td><span class="pdf-badge ${badgeCls(r.wfa)}">${r.wfa}</span></td>
+          </tr>
+          <tr>
+            <td><strong>Chiều cao / Tuổi</strong></td>
+            <td>${r.height} cm</td>
+            <td>${r.whoHeight} cm</td>
+            <td style="color:${r.height < r.whoHeight ? '#C62828' : '#2E7D32'};font-weight:700;">
+              ${r.height > r.whoHeight ? '+' : ''}${(r.height - r.whoHeight).toFixed(1)} cm
+            </td>
+            <td><span class="pdf-badge ${badgeCls(r.hfa)}">${r.hfa}</span></td>
+          </tr>
+          <tr>
+            <td><strong>Cân nặng / Chiều cao</strong></td>
+            <td>Z-score: ${r.wfhZ !== null ? r.wfhZ.toFixed(2) : 'N/A'}</td>
+            <td>Z = 0 (trung vị)</td>
+            <td style="font-weight:700;">${r.wfhZ !== null ? r.wfhZ.toFixed(2) + ' SD' : '-'}</td>
+            <td><span class="pdf-badge ${badgeCls(r.wfh)}">${r.wfh}</span></td>
+          </tr>
+          <tr>
+            <td><strong>BMI</strong></td>
+            <td>${r.bmi} kg/m²</td>
+            <td>18.5 – 24.9</td>
+            <td>—</td>
+            <td><span class="pdf-badge ${r.bmi < 18.5 ? 'pdf-badge-bad' : r.bmi >= 25 ? 'pdf-badge-warn' : 'pdf-badge-ok'}">${r.bmi < 18.5 ? 'Thấp' : r.bmi >= 30 ? 'Béo phì' : r.bmi >= 25 ? 'Thừa cân' : 'Bình thường'}</span></td>
+          </tr>
+          ${r.muacStatus ? `<tr><td><strong>MUAC</strong></td><td>${r.muac} cm</td><td>≥ 12.5 cm</td><td>—</td><td><span class="pdf-badge ${r.muacStatus.includes('Bình') ? 'pdf-badge-ok' : 'pdf-badge-bad'}">${r.muacStatus.includes('Bình') ? 'Bình thường' : r.muacStatus.includes('NẶNG') ? 'SDD nặng' : 'SDD vừa'}</span></td></tr>` : ''}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ENERGY & MACROS -->
+    <div class="pdf-section">
+      <div class="pdf-section-title">⚡ Nhu Cầu Năng Lượng & Đại Chất Dinh Dưỡng</div>
+      <div class="pdf-grid2" style="margin-bottom:10px;">
+        <div class="pdf-stat-box blue">
+          <div class="pdf-stat-label">Năng lượng chuẩn (WHO)</div>
+          <div class="pdf-stat-value" style="color:#0277BD;">${r.stdEnergy} <span style="font-size:12px;">kcal/ngày</span></div>
+          <div class="pdf-stat-sub">Theo độ tuổi và giới tính</div>
+        </div>
+        <div class="pdf-stat-box teal">
+          <div class="pdf-stat-label">Năng lượng cá nhân hóa</div>
+          <div class="pdf-stat-value">${r.targetEnergy} <span style="font-size:12px;">kcal/ngày</span></div>
+          <div class="pdf-stat-sub">${r.energyNote || 'Theo tình trạng dinh dưỡng'}</div>
+        </div>
+      </div>
+
+      <div class="pdf-macro-bar">
+        <div class="pdf-macro-seg" style="flex:55;background:#FF6F00;">Bột đường 55%</div>
+        <div class="pdf-macro-seg" style="flex:15;background:#0277BD;">Đạm 15%</div>
+        <div class="pdf-macro-seg" style="flex:30;background:#2E7D32;">Béo 30%</div>
+      </div>
+
+      <table class="pdf-table">
+        <thead>
+          <tr><th>Đại chất</th><th>Tỷ lệ (%)</th><th>Năng lượng (kcal)</th><th>Khối lượng (g/ngày)</th><th>Nguồn thực phẩm</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong style="color:#FF6F00;">🌾 Bột đường (Carbohydrate)</strong></td>
+            <td>55%</td>
+            <td>${Math.round(r.targetEnergy * 0.55)} kcal</td>
+            <td><strong>${r.carbG} g</strong></td>
+            <td>Gạo, khoai, bún, ngũ cốc</td>
+          </tr>
+          <tr>
+            <td><strong style="color:#0277BD;">🥩 Đạm (Protein)</strong></td>
+            <td>15%</td>
+            <td>${Math.round(r.targetEnergy * 0.15)} kcal</td>
+            <td><strong>${r.proteinG} g</strong></td>
+            <td>Thịt, cá, trứng, đậu, sữa</td>
+          </tr>
+          <tr>
+            <td><strong style="color:#2E7D32;">🫒 Chất béo (Lipid)</strong></td>
+            <td>30%</td>
+            <td>${Math.round(r.targetEnergy * 0.30)} kcal</td>
+            <td><strong>${r.lipidG} g</strong></td>
+            <td>Dầu thực vật, bơ, cá hồi, hạt</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    ${labHtml}
+
+    <!-- FOOD GROUPS -->
+    <div class="pdf-section">
+      <div class="pdf-section-title">🥗 Nhóm Thực Phẩm Khuyến Nghị</div>
+      <div class="pdf-grid3" style="gap:8px;">
+        <div style="padding:10px;background:#FFF8E1;border-radius:6px;border-left:3px solid #FF6F00;">
+          <div style="font-weight:700;color:#FF6F00;margin-bottom:4px;font-size:10px;">🌾 Bột đường - ${r.carbG}g/ngày</div>
+          <p style="font-size:9px;line-height:1.4;">Gạo, khoai lang, yến mạch. ${r.statusKey.includes('Béo phì') ? 'Ưu tiên ngũ cốc nguyên hạt, gạo lứt. Tránh đường tinh luyện.' : 'Đa dạng các loại bột đường.'}</p>
+        </div>
+        <div style="padding:10px;background:#E1F5FE;border-radius:6px;border-left:3px solid #0277BD;">
+          <div style="font-weight:700;color:#0277BD;margin-bottom:4px;font-size:10px;">🥩 Đạm - ${r.proteinG}g/ngày</div>
+          <p style="font-size:9px;line-height:1.4;">Thịt, cá, trứng, sữa. ${r.statusKey.includes('Suy dinh dưỡng') ? 'Tăng đạm động vật, chọn thịt có lẫn mỡ, cá béo.' : r.statusKey.includes('Béo phì') ? 'Chọn thịt nạc (ức gà), cá nạc, sữa tách béo.' : ''}</p>
+        </div>
+        <div style="padding:10px;background:#E8F5E9;border-radius:6px;border-left:3px solid #2E7D32;">
+          <div style="font-weight:700;color:#2E7D32;margin-bottom:4px;font-size:10px;">🫒 Chất béo - ${r.lipidG}g/ngày</div>
+          <p style="font-size:9px;line-height:1.4;">${r.statusKey.includes('Suy dinh dưỡng') ? 'Thêm 5-10ml mỡ lợn/dầu ăn vào cháo/canh. Khuyến khích bơ, phô mai.' : r.statusKey.includes('Béo phì') ? 'Tuyệt đối tránh đồ chiên xào nhiều mỡ. Ưu tiên dầu oliu, mỡ cá béo.' : 'Dầu thực vật, bơ, hạt.'}</p>
+        </div>
+      </div>
+      <div style="margin-top:8px;padding:8px;background:#F3E5F5;border-radius:6px;font-size:9px;">
+        <strong style="color:#6A1B9A;">🥦 Bổ sung vi chất qua thực phẩm:</strong>
+        ${r.labs.some(l => l.name.includes('Sắt') && l.status==='deficit') ? '<strong>Thiếu Sắt:</strong> Tăng cường gan, huyết, thịt bò thẫm màu, mộc nhĩ, rau dền đỏ. ' : ''}
+        ${r.labs.some(l => l.name.includes('Calci') && l.status==='deficit') ? '<strong>Thiếu Canxi:</strong> Ăn tôm tép nhỏ nguyên vỏ, cá nhỏ, phô mai, sữa bò. ' : ''}
+        ${r.labs.some(l => l.name.includes('Kẽm') && l.status==='deficit') ? '<strong>Thiếu Kẽm:</strong> Hàu, hến, thịt bò nạc, lòng đỏ trứng. ' : ''}
+        Rau xanh tươi sống, hoa quả các loại.
+      </div>
+    </div>
+
+    <!-- MENU -->
+    <div class="pdf-section" style="page-break-before: always;">
+      <div class="pdf-section-title">📅 Thực Đơn 7 Ngày Tham Khảo · ${ageLabel} · ${r.statusKey}</div>
+      <table class="pdf-menu-table">
+        <thead>
+          <tr>
+            <th style="min-width:60px;">Bữa</th>
+            ${days.map(d => `<th>${d}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${meals.map(meal => `
+            <tr>
+              <td class="meal-hdr">${meal}<br><span style="font-size:7px;color:#757575;">${mealTimes[meal]}</span></td>
+              ${days.map((d, i) => `<td>${Array.isArray(r.menu[meal]) ? (r.menu[meal][i] || '—') : (r.menu[meal] || '—')}</td>`).join('')}
+            </tr>
+          `).join('')}
+          <tr style="background:#E8F5E9;">
+            <td class="meal-hdr">Tổng NL</td>
+            <td colspan="7" style="text-align:center;font-weight:700;color:#2E7D32;font-size:9px;">~ ${r.targetEnergy} kcal / ngày</td>
+          </tr>
+          ${r.menu['Ghi chú'] ? `
+            <tr>
+              <td class="meal-hdr">Lưu ý</td>
+              <td colspan="7" style="font-style:italic;color:#616161;font-size:8.5px;">${r.menu['Ghi chú']}</td>
+            </tr>
+          ` : ''}
+        </tbody>
+      </table>
+      <div style="margin-top:6px;font-size:8.5px;color:#9E9E9E;font-style:italic;">
+        * Thực đơn mang tính tham khảo. Điều chỉnh theo sở thích, dị ứng và điều kiện gia đình. Tham khảo bác sĩ/chuyên gia dinh dưỡng để được tư vấn chi tiết.
+      </div>
+    </div>
+
+    <!-- CLINICAL NOTE -->
+    <div class="pdf-section">
+      <div class="pdf-section-title">📝 Ghi Chú Lâm Sàng & Khuyến Nghị</div>
+      <div class="pdf-grid2" style="gap:8px;">
+        <div style="padding:10px;background:#F0F4F3;border-radius:6px;border-left:3px solid #00796B;">
+          <div style="font-weight:700;font-size:10px;margin-bottom:4px;color:#004D40;">📊 Tổng kết đánh giá</div>
+          <div style="font-size:9.5px;line-height:1.6;">
+            Tình trạng dinh dưỡng: <strong>${r.wfh}</strong><br>
+            CN/Tuổi: ${r.wfa} | CC/Tuổi: ${r.hfa}<br>
+            ${r.wfaZ < -3 || r.hfaZ < -3 ? '⚠️ Cần can thiệp dinh dưỡng sớm.' : r.wfhZ > 2 ? '⚠️ Cần kiểm soát cân nặng.' : '✅ Tiếp tục theo dõi định kỳ.'}
+          </div>
+        </div>
+        <div style="padding:10px;background:#E1F5FE;border-radius:6px;border-left:3px solid #0277BD;">
+          <div style="font-weight:700;font-size:10px;margin-bottom:4px;color:#01579B;">📅 Lịch theo dõi</div>
+          <div style="font-size:9.5px;line-height:1.6;">
+            Tái khám: <strong>${r.revisit || (r.months < 24 ? 'Sau 2 tháng' : 'Sau 3 tháng')}</strong><br>
+            Cân nặng: ${r.months < 12 ? 'Mỗi tháng' : r.months < 24 ? '2 tháng/lần' : '3 tháng/lần'}<br>
+            Tư vấn dinh dưỡng: <strong>${r.tuvan}</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="pdf-footer">
+      <div>Bệnh nhân: <strong>${r.name}</strong> · ${r.gender} · ${r.months} tháng tuổi</div>
+      <div>Hệ thống Đánh Giá Dinh Dưỡng Nhi Khoa · WHO 2006/2007</div>
+      <div>Ngày in: ${new Date().toLocaleDateString('vi-VN')}</div>
+    </div>
+    <div class="pdf-watermark">Tài liệu này chỉ dùng cho mục đích tham khảo y tế. Cần tham vấn bác sĩ chuyên khoa dinh dưỡng để có phác đồ điều trị chính xác.</div>
+
+  </div>
+  `;
+
+  const tpl = document.getElementById('pdf-template');
+  tpl.innerHTML = html;
+  tpl.style.display = 'block';
+
+  const fileName = `DinhDuong_${r.name.replace(/\s+/g, '_')}_${r.examDate}.pdf`;
+
+  const opt = {
+    margin: 0,
+    filename: fileName,
+    image: { type: 'jpeg', quality: 0.97 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      letterRendering: true,
+      logging: false,
+    },
+    jsPDF: {
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait',
+    },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+  };
+
+  html2pdf().set(opt).from(tpl).save()
+    .then(() => {
+      tpl.style.display = 'none';
+      tpl.innerHTML = '';
+      document.getElementById('pdf-overlay').style.display = 'none';
+      showToast(`📄 Đã xuất PDF: ${fileName}`, 'success');
+    })
+    .catch(err => {
+      tpl.style.display = 'none';
+      document.getElementById('pdf-overlay').style.display = 'none';
+      showToast('Lỗi xuất PDF: ' + err.message, 'error');
+    });
+}
+</script>
+</body>
+</html>
