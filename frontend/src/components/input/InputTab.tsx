@@ -1,4 +1,4 @@
-import type { AssessmentInput, Gender, TuVan } from '@dinhduong/shared';
+import type { AssessmentInput, Gender, MenuFilters, TuVan } from '@dinhduong/shared';
 import { useMemo, useState } from 'react';
 import { useAppState } from '../../context/AppStateContext';
 import { useToast } from '../shared/ToastContext';
@@ -29,14 +29,26 @@ interface FormState {
   examDate: string;
   gender: Gender;
   revisit: string;
+  guardianEmail: string;
   tuvan: TuVan;
   weight: string;
   height: string;
   muac: string;
   labs: LabFormState;
+  menuFilters: Required<MenuFilters>;
 }
 
 const today = new Date().toISOString().slice(0, 10);
+
+const initialMenuFilters: Required<MenuFilters> = {
+  noSeafood: false,
+  noEgg: false,
+  noDairy: false,
+  noPeanutNuts: false,
+  vegetarian: false,
+  noPork: false,
+  noBeef: false,
+};
 
 const initialForm: FormState = {
   name: '',
@@ -44,17 +56,34 @@ const initialForm: FormState = {
   examDate: today,
   gender: 'Nam',
   revisit: '',
+  guardianEmail: '',
   tuvan: 'Có',
   weight: '',
   height: '',
   muac: '',
   labs: { ca: '', vitD: '', zn: '', hb: '', fe: '', ferritin: '', chol: '', tg: '' },
+  menuFilters: initialMenuFilters,
 };
+
+const MENU_FILTER_OPTIONS: { key: keyof MenuFilters; label: string }[] = [
+  { key: 'vegetarian', label: '🥦 Ăn chay (không thịt/cá/hải sản)' },
+  { key: 'noSeafood', label: '🦐 Không hải sản' },
+  { key: 'noEgg', label: '🥚 Không trứng' },
+  { key: 'noDairy', label: '🥛 Không sữa/chế phẩm sữa' },
+  { key: 'noPeanutNuts', label: '🥜 Không đậu phộng/hạt' },
+  { key: 'noPork', label: '🚫🐖 Không thịt heo' },
+  { key: 'noBeef', label: '🚫🐄 Không thịt bò' },
+];
 
 function toNullableNumber(raw: string): number | null {
   if (raw.trim() === '') return null;
   const n = parseFloat(raw);
   return Number.isNaN(n) ? null : n;
+}
+
+function toNullableString(raw: string): string | null {
+  const trimmed = raw.trim();
+  return trimmed === '' ? null : trimmed;
 }
 
 function buildAssessmentInput(form: FormState): AssessmentInput | null {
@@ -73,6 +102,8 @@ function buildAssessmentInput(form: FormState): AssessmentInput | null {
     gender: form.gender,
     tuvan: form.tuvan,
     revisit: form.revisit || null,
+    guardianEmail: toNullableString(form.guardianEmail),
+    menuFilters: form.menuFilters,
     labs: {
       ca: toNullableNumber(form.labs.ca),
       vitD: toNullableNumber(form.labs.vitD),
@@ -103,6 +134,9 @@ export function InputTab() {
   }
   function updateLab<K extends keyof LabFormState>(key: K, value: string) {
     setForm((f) => ({ ...f, labs: { ...f.labs, [key]: value } }));
+  }
+  function updateMenuFilter(key: keyof MenuFilters, value: boolean) {
+    setForm((f) => ({ ...f, menuFilters: { ...f.menuFilters, [key]: value } }));
   }
 
   function handleViewResult() {
@@ -192,6 +226,17 @@ export function InputTab() {
             <input type="date" className="form-control" value={form.revisit} onChange={(e) => update('revisit', e.target.value)} />
           </div>
           <div className="form-group">
+            <label className="form-label">Email phụ huynh (để nhắc lịch tái khám)</label>
+            <input
+              type="email"
+              className="form-control"
+              placeholder="phuhuynh@email.com"
+              value={form.guardianEmail}
+              onChange={(e) => update('guardianEmail', e.target.value)}
+            />
+            <div className="form-hint">Tùy chọn — hệ thống tự gửi email nhắc trước ngày tái khám nếu có địa chỉ này.</div>
+          </div>
+          <div className="form-group">
             <label className="form-label">Tư vấn dinh dưỡng</label>
             <SegmentedControl
               options={[
@@ -268,6 +313,25 @@ export function InputTab() {
             <LabField label="Ferritin (ng/mL)" hint="Trẻ ≤5t: <12 | Trẻ >5t: <15" placeholder="BT: >12" value={form.labs.ferritin} onChange={(v) => updateLab('ferritin', v)} />
             <LabField label="Cholesterol toàn phần (mg/dL)" hint="Tăng: ≥200 mg/dL" placeholder="BT: <170" value={form.labs.chol} onChange={(v) => updateLab('chol', v)} />
             <LabField label="Triglycerid (mg/dL)" hint="Trẻ <10t: <100 | Trẻ ≥10t: <130" placeholder="BT: <100" value={form.labs.tg} onChange={(v) => updateLab('tg', v)} />
+          </div>
+        </Card>
+
+        <Card icon="🥗" iconBg="#E8F5E9" title="I. Lọc Thực Đơn (Tùy chọn)">
+          <InfoBox tone="info">
+            Món không phù hợp sẽ được thay bằng món khác cùng bữa trong thực đơn mẫu; nếu cả tuần không còn món phù hợp, hệ thống dùng món
+            trung tính an toàn (cơm + đậu phụ + rau).
+          </InfoBox>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 }}>
+            {MENU_FILTER_OPTIONS.map((opt) => (
+              <label key={opt.key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={form.menuFilters[opt.key]}
+                  onChange={(e) => updateMenuFilter(opt.key, e.target.checked)}
+                />
+                {opt.label}
+              </label>
+            ))}
           </div>
         </Card>
       </div>

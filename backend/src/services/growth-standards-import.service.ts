@@ -43,17 +43,25 @@ const VALID_GENDERS: Gender[] = ['Nam', 'Nữ'];
 const VALID_METRICS: GrowthMetric[] = ['WFA', 'HFA'];
 
 /**
- * Parses a CSV with header `gender,metric,months,median,source`. Throws
+ * Parses a CSV with header `gender,metric,months,median,l,s,source`. `l`/`s`
+ * are the WHO LMS parameters (see z-score.service.ts) — required, not
+ * optional, so an imported table always supports real LMS Z-scores rather
+ * than silently falling back to no Z-score at all. Throws
  * GrowthStandardsImportError with a 1-based line number on the first
  * malformed row — callers should reject the whole import rather than
  * partially apply it (a half-imported reference table is worse than none).
+ *
+ * NOTE: this format changed (added l,s) when the app moved from an
+ * approximate Z-score formula to the real WHO LMS method — a CSV exported
+ * before that change (5 columns: gender,metric,months,median,source) will no
+ * longer import; re-export from this version of the app first.
  */
 export function parseGrowthStandardsCsv(csvText: string): GrowthStandardRecord[] {
   const lines = csvText.trim().split(/\r?\n/);
   if (lines.length < 2) throw new GrowthStandardsImportError('CSV rỗng hoặc thiếu dữ liệu (chỉ có header)');
 
   const header = parseCsvLine(lines[0]).map((h) => h.trim().toLowerCase());
-  const expected = ['gender', 'metric', 'months', 'median', 'source'];
+  const expected = ['gender', 'metric', 'months', 'median', 'l', 's', 'source'];
   if (expected.some((col, i) => header[i] !== col)) {
     throw new GrowthStandardsImportError(`Header phải đúng thứ tự: ${expected.join(',')} (nhận được: ${header.join(',')})`, 1);
   }
@@ -63,10 +71,10 @@ export function parseGrowthStandardsCsv(csvText: string): GrowthStandardRecord[]
     const lineNumber = i + 1;
     if (!lines[i].trim()) continue;
     const cols = parseCsvLine(lines[i]);
-    if (cols.length < 5) {
-      throw new GrowthStandardsImportError(`Dòng ${lineNumber}: thiếu cột (cần đủ 5 cột, có ${cols.length})`, lineNumber);
+    if (cols.length < 7) {
+      throw new GrowthStandardsImportError(`Dòng ${lineNumber}: thiếu cột (cần đủ 7 cột, có ${cols.length})`, lineNumber);
     }
-    const [genderRaw, metricRaw, monthsRaw, medianRaw, source] = cols;
+    const [genderRaw, metricRaw, monthsRaw, medianRaw, lRaw, sRaw, source] = cols;
     const gender = genderRaw.trim();
     const metric = metricRaw.trim().toUpperCase();
     if (!VALID_GENDERS.includes(gender as Gender)) {
@@ -83,7 +91,23 @@ export function parseGrowthStandardsCsv(csvText: string): GrowthStandardRecord[]
     if (!Number.isFinite(median) || median <= 0) {
       throw new GrowthStandardsImportError(`Dòng ${lineNumber}: median phải là số dương, nhận được "${medianRaw}"`, lineNumber);
     }
-    records.push({ gender: gender as Gender, metric: metric as GrowthMetric, months, median, source: source.trim() || 'Không rõ nguồn' });
+    const l = Number(lRaw);
+    if (!Number.isFinite(l)) {
+      throw new GrowthStandardsImportError(`Dòng ${lineNumber}: l (LMS) phải là số, nhận được "${lRaw}"`, lineNumber);
+    }
+    const s = Number(sRaw);
+    if (!Number.isFinite(s) || s <= 0) {
+      throw new GrowthStandardsImportError(`Dòng ${lineNumber}: s (LMS) phải là số dương, nhận được "${sRaw}"`, lineNumber);
+    }
+    records.push({
+      gender: gender as Gender,
+      metric: metric as GrowthMetric,
+      months,
+      median,
+      l,
+      s,
+      source: source.trim() || 'Không rõ nguồn',
+    });
   }
 
   if (records.length === 0) {
@@ -103,7 +127,9 @@ export async function importGrowthStandards(prisma: PrismaClient, records: Growt
 }
 
 export function exportGrowthStandardsCsv(): string {
-  const header = 'gender,metric,months,median,source';
-  const rows = getAllRecords().map((r) => [r.gender, r.metric, r.months, r.median, `"${r.source.replace(/"/g, '""')}"`].join(','));
+  const header = 'gender,metric,months,median,l,s,source';
+  const rows = getAllRecords().map((r) =>
+    [r.gender, r.metric, r.months, r.median, r.l, r.s, `"${r.source.replace(/"/g, '""')}"`].join(','),
+  );
   return '﻿' + [header, ...rows].join('\n');
 }

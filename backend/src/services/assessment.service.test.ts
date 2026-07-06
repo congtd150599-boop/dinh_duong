@@ -76,8 +76,11 @@ describe('runAssessment — overweight/obesity via WFH (m=24, boy, median height
 
 describe('runAssessment — severe stunting takes priority over WFH-driven overweight in the branch chain', () => {
   // m=24 boy, weight at median (wfaZ=0) but height far below median → hfaZ<-3,
-  // which incidentally pushes wfhZ>2 too (short-for-weight). The legacy if/else-if
-  // chain checks malnutrition, then stunting, THEN overweight — so stunting wins here.
+  // which incidentally pushes wfhZ way above 2 too (severely short-for-weight —
+  // the real WHO weight-for-height table says a 70cm-tall child should weigh
+  // ~8.6kg, so 12.2kg reads as severe obesity-for-height, not just "overweight").
+  // The legacy if/else-if chain checks malnutrition, then stunting, THEN
+  // overweight — so stunting wins here regardless of the wfh label.
   const result = runAssessment({
     ...baseInput,
     examDate: '2026-01-01',
@@ -90,8 +93,8 @@ describe('runAssessment — severe stunting takes priority over WFH-driven overw
     expect(result.hfa).toBe('Thấp còi nặng');
     expect(result.hfaZ).toBeLessThan(-3);
   });
-  it('wfh happens to read as Thừa cân in isolation, but statusKey is driven by stunting', () => {
-    expect(result.wfh).toBe('Thừa cân');
+  it('wfh happens to read as Béo phì in isolation, but statusKey is driven by stunting', () => {
+    expect(result.wfh).toBe('Béo phì');
     expect(result.wfa).toBe('Bình thường');
     expect(result.statusKey).toBe('Suy dinh dưỡng');
   });
@@ -103,9 +106,11 @@ describe('runAssessment — moderate and severe wasting via WFH', () => {
       ...baseInput,
       examDate: '2026-01-01',
       gender: 'Nam',
-      weight: 8.5,
+      weight: 10, // real WHO WFH LMS at height=87.8 (Nam) puts this at Z≈-2.73
       height: 87.8,
     });
+    expect(result.wfhZ).toBeGreaterThan(-3);
+    expect(result.wfhZ).toBeLessThan(-2);
     expect(result.wfh).toBe('Suy dinh dưỡng cấp');
     expect(result.statusKey).toBe('Suy dinh dưỡng');
   });

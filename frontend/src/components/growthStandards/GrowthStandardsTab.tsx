@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { GrowthStandardRecord } from '../../api/growthStandards';
 import { growthStandardsExportUrl, importGrowthStandardsCsv, listGrowthStandards } from '../../api/growthStandards';
 import { ApiError } from '../../api/client';
@@ -11,6 +11,11 @@ interface ImportErrorDetails {
 import { Card } from '../shared/Card';
 import { InfoBox } from '../shared/InfoBox';
 import { useToast } from '../shared/ToastContext';
+import { GrowthCurveChart, type CurveTick } from './GrowthCurveChart';
+import { buildCurvePoints } from './curveData';
+
+const WFA_TICKS: CurveTick[] = [0, 12, 24, 36, 48, 60].map((m) => ({ months: m, label: String(m) }));
+const HFA_TICKS: CurveTick[] = Array.from({ length: 10 }, (_, i) => i * 24).map((m) => ({ months: m, label: String(m / 12) }));
 
 export function GrowthStandardsTab() {
   const { data: records, isLoading } = useQuery({ queryKey: ['growthStandards'], queryFn: listGrowthStandards });
@@ -54,6 +59,8 @@ export function GrowthStandardsTab() {
   }
 
   const summary = summarize(records ?? []);
+  const wfaPoints = useMemo(() => buildCurvePoints(records ?? [], 'WFA'), [records]);
+  const hfaPoints = useMemo(() => buildCurvePoints(records ?? [], 'HFA'), [records]);
 
   return (
     <div>
@@ -107,7 +114,8 @@ export function GrowthStandardsTab() {
         <Card icon="📤" iconBg="#FFF3E0" title="Nhập Dữ Liệu Mới">
           <InfoBox tone="warn">
             Nhập file CSV sẽ <strong>thay thế toàn bộ</strong> bảng hiện tại, áp dụng ngay lập tức (không cần khởi động lại). Định dạng cột bắt
-            buộc: <code>gender,metric,months,median,source</code> — gender là "Nam"/"Nữ", metric là "WFA"/"HFA".
+            buộc: <code>gender,metric,months,median,l,s,source</code> — gender là "Nam"/"Nữ", metric là "WFA"/"HFA", l/s là tham số LMS
+            (dùng để tính Z-score chuẩn WHO, không phải chỉ median).
           </InfoBox>
           <div className="form-group" style={{ marginTop: 12 }}>
             <label className="form-label">Chọn file CSV</label>
@@ -124,6 +132,32 @@ export function GrowthStandardsTab() {
           </button>
         </Card>
       </div>
+
+      {!isLoading && (
+        <div style={{ marginTop: 20 }}>
+          <Card icon="📈" iconBg="#E8F5E9" title="Biểu Đồ Trực Quan (Nam / Nữ)">
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
+              Đường trung vị (median) theo tháng tuổi. Di chuột (hoặc chạm) vào biểu đồ để xem giá trị chi tiết từng mốc tuổi.
+            </p>
+            <div style={{ display: 'grid', gap: 32 }}>
+              <GrowthCurveChart
+                title="Cân nặng theo tuổi — WFA (0–5 tuổi, tháng)"
+                unit="kg"
+                points={wfaPoints}
+                xTicks={WFA_TICKS}
+                ariaLabel="Biểu đồ cân nặng trung vị theo tháng tuổi, Nam và Nữ"
+              />
+              <GrowthCurveChart
+                title="Chiều cao theo tuổi — HFA (0–19 tuổi, năm)"
+                unit="cm"
+                points={hfaPoints}
+                xTicks={HFA_TICKS}
+                ariaLabel="Biểu đồ chiều cao trung vị theo tuổi, Nam và Nữ"
+              />
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

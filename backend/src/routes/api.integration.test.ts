@@ -1,9 +1,11 @@
 import request from 'supertest';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from '../app';
+import { loginAsRole } from '../test-utils/auth-test-helper';
 import { testPrisma, truncateAllTables } from '../test-utils/test-prisma';
 
 const app = createApp(testPrisma);
+let agent: request.SuperAgentTest;
 
 const validInput = {
   name: 'Nguyễn Văn A',
@@ -20,6 +22,12 @@ beforeAll(async () => {
   await truncateAllTables();
 });
 
+beforeEach(async () => {
+  // afterEach truncates the User table too, so a fresh logged-in agent is
+  // needed for every test.
+  agent = await loginAsRole(app, 'bac_si');
+});
+
 afterEach(async () => {
   await truncateAllTables();
 });
@@ -30,35 +38,35 @@ afterAll(async () => {
 
 describe('POST /api/assessments', () => {
   it('valid payload → 200 with expected fields, does not persist', async () => {
-    const res = await request(app).post('/api/assessments').send(validInput);
+    const res = await agent.post('/api/assessments').send(validInput);
     expect(res.status).toBe(200);
     expect(res.body.wfa).toBe('Bình thường');
     expect(res.body.targetEnergy).toBe(1200);
 
-    const list = await request(app).get('/api/patients');
+    const list = await agent.get('/api/patients');
     expect(list.body).toHaveLength(0);
   });
 
   it('missing required field (name) → 400', async () => {
     const { name, ...rest } = validInput;
-    const res = await request(app).post('/api/assessments').send(rest);
+    const res = await agent.post('/api/assessments').send(rest);
     expect(res.status).toBe(400);
   });
 
   it('malformed type (weight as string) → 400, not 500', async () => {
-    const res = await request(app).post('/api/assessments').send({ ...validInput, weight: '12.2' });
+    const res = await agent.post('/api/assessments').send({ ...validInput, weight: '12.2' });
     expect(res.status).toBe(400);
   });
 });
 
 describe('POST /api/patients + GET /api/patients', () => {
   it('creates a patient (201) and it appears in the subsequent list', async () => {
-    const createRes = await request(app).post('/api/patients').send(validInput);
+    const createRes = await agent.post('/api/patients').send(validInput);
     expect(createRes.status).toBe(201);
     expect(createRes.body.id).toBeDefined();
     expect(createRes.body.wfa).toBe('Bình thường');
 
-    const listRes = await request(app).get('/api/patients');
+    const listRes = await agent.get('/api/patients');
     expect(listRes.status).toBe(200);
     expect(listRes.body).toHaveLength(1);
     expect(listRes.body[0].name).toBe('Nguyễn Văn A');
@@ -66,48 +74,48 @@ describe('POST /api/patients + GET /api/patients', () => {
   });
 
   it('rejects invalid payload with 400 and does not create a row', async () => {
-    const res = await request(app).post('/api/patients').send({ ...validInput, weight: -5 });
+    const res = await agent.post('/api/patients').send({ ...validInput, weight: -5 });
     expect(res.status).toBe(400);
-    const listRes = await request(app).get('/api/patients');
+    const listRes = await agent.get('/api/patients');
     expect(listRes.body).toHaveLength(0);
   });
 });
 
 describe('GET/DELETE /api/patients/:id', () => {
   it('GET an existing id → 200; unknown id → 404', async () => {
-    const created = await request(app).post('/api/patients').send(validInput);
+    const created = await agent.post('/api/patients').send(validInput);
     const id = created.body.id;
 
-    const found = await request(app).get(`/api/patients/${id}`);
+    const found = await agent.get(`/api/patients/${id}`);
     expect(found.status).toBe(200);
     expect(found.body.id).toBe(id);
 
-    const notFound = await request(app).get('/api/patients/does-not-exist');
+    const notFound = await agent.get('/api/patients/does-not-exist');
     expect(notFound.status).toBe(404);
   });
 
   it('DELETE removes the record; subsequent GET is 404', async () => {
-    const created = await request(app).post('/api/patients').send(validInput);
+    const created = await agent.post('/api/patients').send(validInput);
     const id = created.body.id;
 
-    const del = await request(app).delete(`/api/patients/${id}`);
+    const del = await agent.delete(`/api/patients/${id}`);
     expect(del.status).toBe(204);
 
-    const found = await request(app).get(`/api/patients/${id}`);
+    const found = await agent.get(`/api/patients/${id}`);
     expect(found.status).toBe(404);
   });
 
   it('DELETE on an unknown id → 404', async () => {
-    const del = await request(app).delete('/api/patients/does-not-exist');
+    const del = await agent.delete('/api/patients/does-not-exist');
     expect(del.status).toBe(404);
   });
 });
 
 describe('GET /api/patients/export/csv', () => {
   it('returns correct content-type and a header row', async () => {
-    await request(app).post('/api/patients').send(validInput);
+    await agent.post('/api/patients').send(validInput);
 
-    const res = await request(app).get('/api/patients/export/csv');
+    const res = await agent.get('/api/patients/export/csv');
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toContain('text/csv');
     expect(res.text).toContain('STT');
@@ -115,11 +123,23 @@ describe('GET /api/patients/export/csv', () => {
   });
 
   it('escapes a name containing a comma and a double quote', async () => {
-    await request(app)
-      .post('/api/patients')
-      .send({ ...validInput, name: 'Trần "Bé" B, Jr.' });
+    await agent.post('/api/patients').send({ ...validInput, name: 'Trần "Bé" B, Jr.' });
 
-    const res = await request(app).get('/api/patients/export/csv');
+    const res = await agent.get('/api/patients/export/csv');
     expect(res.text).toContain('"Trần ""Bé"" B, Jr."');
+  });
+});
+
+describe('Auth enforcement', () => {
+  it('unauthenticated request → 401', async () => {
+    const res = await request(app).get('/api/patients');
+    expect(res.status).toBe(401);
+  });
+
+  it('dieu_duong cannot DELETE a patient → 403', async () => {
+    const created = await agent.post('/api/patients').send(validInput);
+    const nurseAgent = await loginAsRole(app, 'dieu_duong');
+    const res = await nurseAgent.delete(`/api/patients/${created.body.id}`);
+    expect(res.status).toBe(403);
   });
 });

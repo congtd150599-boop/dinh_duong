@@ -4,6 +4,7 @@ export type Gender = 'Nam' | 'Nữ';
 export type TuVan = 'Có' | 'Không';
 export type LabStatus = 'deficit' | 'excess' | 'ok';
 export type MealSlot = 'Sáng' | 'Phụ sáng' | 'Trưa' | 'Phụ chiều' | 'Tối' | 'Phụ tối';
+export type Role = 'admin' | 'bac_si' | 'dieu_duong';
 
 export interface LabInputs {
   ca?: number | null;
@@ -27,6 +28,17 @@ export interface LabResult {
   recommendation: string;
 }
 
+/** Menu exclusion toggles — a filter with none set means "no restriction". */
+export interface MenuFilters {
+  noSeafood?: boolean;
+  noEgg?: boolean;
+  noDairy?: boolean;
+  noPeanutNuts?: boolean;
+  vegetarian?: boolean;
+  noPork?: boolean;
+  noBeef?: boolean;
+}
+
 export interface AssessmentInput {
   name: string;
   dob: string; // ISO date
@@ -37,6 +49,8 @@ export interface AssessmentInput {
   gender: Gender;
   tuvan: TuVan;
   revisit?: string | null;
+  guardianEmail?: string | null;
+  menuFilters?: MenuFilters;
   labs: LabInputs;
 }
 
@@ -92,6 +106,7 @@ export interface AssessmentResult {
   statusKey: string;
   tuvan: TuVan;
   revisit: string | null;
+  guardianEmail: string | null;
 }
 
 /** Wire shape of a persisted Patient record as returned by the /api/patients endpoints. */
@@ -107,6 +122,7 @@ export interface PatientRecord {
   height: number;
   muac: number | null;
   revisit: string | null;
+  guardianEmail: string | null;
   tuvan: TuVan;
   labCa: number | null;
   labVitD: number | null;
@@ -131,4 +147,14 @@ export interface PatientRecord {
   fullResult: AssessmentResult;
   /** Computed display order (1-based), not stored — see plan notes on the legacy stt bug. */
   stt: number;
+}
+
+/** Wire shape of a staff account as returned by the /api/users and /api/auth endpoints. Never carries passwordHash. */
+export interface UserRecord {
+  id: string;
+  createdAt: string;
+  name: string;
+  email: string;
+  role: Role;
+  isActive: boolean;
 }

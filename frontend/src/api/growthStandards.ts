@@ -15,7 +15,7 @@ export function growthStandardsExportUrl(): string {
 }
 
 export async function listGrowthStandards(): Promise<GrowthStandardRecord[]> {
-  const res = await fetch(`${API_URL}/growth-standards`);
+  const res = await fetch(`${API_URL}/growth-standards`, { credentials: 'include' });
   if (!res.ok) throw new ApiError('Failed to list growth standards', res.status);
   return res.json();
 }
@@ -23,6 +23,7 @@ export async function listGrowthStandards(): Promise<GrowthStandardRecord[]> {
 export async function importGrowthStandardsCsv(csvText: string): Promise<{ imported: number }> {
   const res = await fetch(`${API_URL}/growth-standards/import`, {
     method: 'POST',
+    credentials: 'include',
     headers: { 'Content-Type': 'text/csv; charset=utf-8' },
     body: csvText,
   });

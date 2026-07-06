@@ -1,5 +1,33 @@
 import { describe, expect, it } from 'vitest';
-import { classifyZ } from './z-score.service';
+import { classifyZ, computeLmsZ } from './z-score.service';
+
+describe('computeLmsZ — real WHO LMS formula (replaces the old flat-coefficient approximation)', () => {
+  it('X exactly at the median (M) → Z = 0, for both the L≠0 and L=0 branches', () => {
+    expect(computeLmsZ(75.7, { l: 1, m: 75.7, s: 0.03137 })).toBeCloseTo(0, 6);
+    expect(computeLmsZ(10, { l: 0, m: 10, s: 0.1 })).toBeCloseTo(0, 6);
+  });
+
+  it('L=0 branch uses ln(X/M)/S directly', () => {
+    // X = M * e^(S*Z)  =>  at Z=1, X = 10 * e^0.1
+    expect(computeLmsZ(10 * Math.exp(0.1), { l: 0, m: 10, s: 0.1 })).toBeCloseTo(1, 6);
+  });
+
+  it('L≠0 branch matches a hand-verified WHO reference point (Nam, HFA, month=12: l=1, m=75.7, s=0.03137)', () => {
+    // With l=1 the formula reduces to (X/M - 1)/S, so M*(1+S) should give Z=1 exactly.
+    const lms = { l: 1, m: 75.7, s: 0.03137 };
+    expect(computeLmsZ(75.7 * 1.03137, lms)).toBeCloseTo(1, 6);
+    expect(computeLmsZ(75.7 * (1 - 0.03137), lms)).toBeCloseTo(-1, 6);
+  });
+
+  it('L≠0, L negative — a real skewed WFA reference point (Nam, WFA, month=24: l=-0.0136, m=12.1, s=0.11425)', () => {
+    // Cross-checked directly against the WHO source data during the LMS
+    // migration — pins the formula's sign/shape, not just a round-trip.
+    const lms = { l: -0.0136, m: 12.1, s: 0.11425 };
+    expect(computeLmsZ(12.1, lms)).toBeCloseTo(0, 6);
+    expect(computeLmsZ(15.2, lms)).toBeCloseTo(1.9933, 3);
+    expect(computeLmsZ(9.4, lms)).toBeCloseTo(-2.2138, 3);
+  });
+});
 
 describe('classifyZ — wfa boundaries', () => {
   it('z = -3.01 → Nhẹ cân nặng (severe)', () => {

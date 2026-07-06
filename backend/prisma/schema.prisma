@@ -22,6 +22,8 @@ model Patient {
   muac      Float?
   revisit   DateTime?
   tuvan     String // 'Có' | 'Không'
+  guardianEmail          String? // optional — reminder emails just don't get sent for a patient without one
+  revisitReminderSentAt  DateTime? // set once the reminder email succeeds, so the daily scan never double-sends
 
   // raw optional lab inputs
   labCa        Float?
@@ -54,6 +56,18 @@ model Patient {
   @@index([name])
 }
 
+// Staff accounts for login + role-based access control.
+model User {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String // 'admin' | 'bac_si' | 'dieu_duong' — validated via zod at the API boundary, not a Postgres enum
+  isActive     Boolean  @default(true)
+}
+
 // Growth-reference median lookup (WFA/HFA), separated from code so it can be
 // re-imported later (e.g. when WHO revises a standard) without a deploy.
 // A bundled CSV default (backend/src/data/growth-standards-who-default.csv)
@@ -63,7 +77,9 @@ model GrowthStandardPoint {
   gender   String // 'Nam' | 'Nữ'
   metric   String // 'WFA' | 'HFA'
   months   Int
-  median   Float
+  median   Float // the LMS "M" parameter
+  l        Float? // LMS "L" (skewness) parameter — real WHO LMS Z-score method, not the old flat-coefficient approximation
+  s        Float? // LMS "S" (coefficient of variation) parameter
   source   String // free-text citation, e.g. "WHO Child Growth Standards 2006"
   importedAt DateTime @default(now())
 

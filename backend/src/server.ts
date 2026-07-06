@@ -1,5 +1,7 @@
 import { createApp } from './app';
 import { prisma } from './db/prisma';
+import { startRevisitReminderJob } from './jobs/revisit-reminder.job';
+import { bootstrapAdminIfNeeded } from './services/auth.service';
 import { loadFromDatabase } from './services/growth-standards.service';
 
 const port = process.env.PORT ? Number(process.env.PORT) : 4000;
@@ -14,6 +16,9 @@ async function main() {
       ? `Loaded ${loaded} growth-standard records from the database (imported data).`
       : 'No imported growth-standard data found — using the bundled WHO default.',
   );
+
+  await bootstrapAdminIfNeeded(prisma);
+  startRevisitReminderJob(prisma);
 
   app.listen(port, () => {
     console.log(`Backend listening on port ${port}`);

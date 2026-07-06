@@ -2,8 +2,10 @@ import type { AssessmentInput, AssessmentResult } from '@dinhduong/shared';
 import type { AgeKey } from '../data/menu.data';
 import { calcEnergy, calcMacros } from './energy.service';
 import { assessLabs } from './lab-assessment.service';
+import { applyMenuFilters } from './menu-filter.service';
 import { buildMenuWithQuantities, getBaseMenu } from './menu.service';
-import { getHfaMedian, getWfaMedian } from './growth-standards.service';
+import { getHfaLms, getHfaMedian, getWfaLms, getWfaMedian } from './growth-standards.service';
+import { getWfhLms } from './wfh-lms.service';
 import { computeZScores } from './z-score.service';
 
 function monthsBetween(dob: string, examDate: string): number {
@@ -41,8 +43,9 @@ export function runAssessment(input: AssessmentInput): AssessmentResult {
   const { wfaZ, wfhZ, hfaZ, wfa, hfa, wfh } = computeZScores({
     weight: input.weight,
     height: input.height,
-    whoWeight,
-    whoHeight,
+    wfaLms: getWfaLms(input.gender, months),
+    hfaLms: getHfaLms(input.gender, months),
+    wfhLms: getWfhLms(input.gender, months, input.height),
   });
 
   let muacStatus: string | null = null;
@@ -72,7 +75,7 @@ export function runAssessment(input: AssessmentInput): AssessmentResult {
   const labs = assessLabs(months, input.labs);
 
   const menuKey = `${ageKey}_${statusKey}`;
-  const baseMenu = getBaseMenu(ageKey, statusKey);
+  const baseMenu = applyMenuFilters(getBaseMenu(ageKey, statusKey), input.menuFilters ?? {});
   const menu = buildMenuWithQuantities({
     baseMenu,
     months,
@@ -116,5 +119,6 @@ export function runAssessment(input: AssessmentInput): AssessmentResult {
     statusKey,
     tuvan: input.tuvan,
     revisit: input.revisit ?? null,
+    guardianEmail: input.guardianEmail ?? null,
   };
 }

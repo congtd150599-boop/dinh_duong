@@ -1,4 +1,5 @@
 import type { MealSlot, MenuDish, MenuIngredient, WeeklyMenu } from '@dinhduong/shared';
+import { getFoodComposition } from '../data/food-composition.data';
 import { MENU_DATA, type AgeKey, type MenuEntry } from '../data/menu.data';
 
 const MEAL_SLOTS: MealSlot[] = ['Sáng', 'Phụ sáng', 'Trưa', 'Phụ chiều', 'Tối', 'Phụ tối'];
@@ -12,6 +13,9 @@ const MEAL_RATIOS: Record<MealSlot, number> = {
   'Tối': 0.25,
   'Phụ tối': 0.1,
 };
+
+/** A dish containing one of these has a real staple carb, however else it reads — never snack-classified by text alone. */
+const STAPLE_KEYWORDS = ['cơm', 'cháo', 'bún', 'phở', 'mì', 'xôi', 'bánh mì'];
 
 function roundToStep(value: number, step: number): number {
   return Math.round(value / step) * step;
@@ -38,10 +42,12 @@ export function getBaseMenu(ageKey: AgeKey, statusKey: string): MenuEntry {
 }
 
 /**
- * Verbatim port of the "Dynamic Macro-based Menu Processing" block in legacy
- * calculate() (lines 2239-2330). Same quantities/branches, but returns
- * structured ingredient data instead of pre-baked HTML strings (see plan
- * decision: React should not receive raw HTML from the API for this).
+ * Port of the "Dynamic Macro-based Menu Processing" block in legacy
+ * calculate() (lines 2239-2330), returning structured ingredient data instead
+ * of pre-baked HTML strings. Ingredient weights are back-solved from the
+ * day's already-computed macro budget using real per-ingredient nutrition
+ * data (food-composition.data.ts) — energy.service.ts's targets stay entirely
+ * independent of dish/ingredient content, same architecture as before.
  */
 export function buildMenuWithQuantities(params: {
   baseMenu: MenuEntry;
@@ -68,23 +74,34 @@ export function buildMenuWithQuantities(params: {
       const lowDish = dish.toLowerCase();
       const ingredients: MenuIngredient[] = [];
 
+      const hasStaple = STAPLE_KEYWORDS.some((kw) => lowDish.includes(kw));
+      // A dish only reads as a pure drink/fruit snack if it has no staple carb
+      // at all — fixes a bug where a full meal mentioning "sữa" as a side
+      // (e.g. "Khoai lang luộc + Sữa tách béo") was wrongly rendered as a
+      // single milk line instead of the actual meal.
       const isSnack =
         meal.includes('Phụ') ||
-        lowDish.includes('sữa') ||
-        lowDish.includes('trái cây') ||
-        lowDish.includes('hoa quả');
+        (!hasStaple && (lowDish.includes('sữa') || lowDish.includes('trái cây') || lowDish.includes('hoa quả')));
 
       if (isSnack) {
-        if (lowDish.includes('sữa f100') || lowDish.includes('sữa cao nl') || lowDish.includes('pedia')) {
-          const ml = roundToStep(mealKcal / 1.0, 10);
+        if (lowDish.includes('sữa f100') || lowDish.includes('sữa cao') || lowDish.includes('pedia')) {
+          const comp = getFoodComposition('sữa đặc trị');
+          const ml = roundToStep((mealKcal / comp.kcalPer100) * 100, 10);
           ingredients.push({ icon: '🥛', amount: ml, unit: 'ml', label: 'sữa đặc trị' });
+        } else if (lowDish.includes('sữa hạt')) {
+          const comp = getFoodComposition('sữa hạt');
+          const ml = roundToStep((mealKcal / comp.kcalPer100) * 100, 10);
+          ingredients.push({ icon: '🌰', amount: ml, unit: 'ml', label: 'sữa hạt' });
         } else if (lowDish.includes('sữa')) {
-          const ml = roundToStep(mealKcal / 0.65, 10);
+          const milkComp = getFoodComposition('sữa tươi/chua');
+          const ml = roundToStep((mealKcal / milkComp.kcalPer100) * 100, 10);
           if (ml > 250) {
+            const fruitComp = getFoodComposition('trái cây tươi');
+            const milkKcal = 200 * (milkComp.kcalPer100 / 100);
             ingredients.push({ icon: '🥛', amount: 200, unit: 'ml', label: 'sữa' });
             ingredients.push({
               icon: '🍎',
-              amount: roundToStep((mealKcal - 130) / 0.5, 5),
+              amount: roundToStep(((mealKcal - milkKcal) / fruitComp.kcalPer100) * 100, 5),
               unit: 'g',
               label: 'trái cây/bánh',
             });
@@ -92,110 +109,85 @@ export function buildMenuWithQuantities(params: {
             ingredients.push({ icon: '🥛', amount: ml, unit: 'ml', label: 'sữa tươi/chua' });
           }
         } else {
-          const g = roundToStep(mealKcal / 0.5, 10);
+          const comp = getFoodComposition('trái cây tươi');
+          const g = roundToStep((mealKcal / comp.kcalPer100) * 100, 10);
           ingredients.push({ icon: '🍎', amount: g, unit: 'g', label: 'trái cây tươi' });
         }
       } else {
         // Main meals
-        let carbName = 'cơm tẻ';
+        let carbLabel = 'cơm tẻ';
         let carbIcon = '🍚';
-        let carbDensity = 0.28; // 28g carb per 100g cooked rice
 
-        if (lowDish.includes('phở') || lowDish.includes('bún') || lowDish.includes('mì')) {
-          carbName = 'bún/phở';
-          carbIcon = '🍜';
-          carbDensity = 0.2;
-        } else if (lowDish.includes('sữa hạt')) {
-          carbName = 'sữa hạt';
-          carbIcon = '🌰';
-          carbDensity = 0.6;
-        } else if (lowDish.includes('cháo')) {
-          carbName = 'cháo đặc';
-          carbIcon = '🍲';
-          carbDensity = 0.15;
-        } else if (lowDish.includes('xôi')) {
-          carbName = 'xôi/nếp';
-          carbIcon = '🍙';
-          carbDensity = 0.4;
-        } else if (lowDish.includes('cơm lứt')) {
-          carbName = 'cơm gạo lứt';
-          carbDensity = 0.25;
-        } else if (lowDish.includes('bánh mì')) {
-          carbName = 'bánh mì';
+        // "bánh mì" checked before the "mì" (bún/phở/mì) keyword, which would
+        // otherwise always match first ('bánh mì'.includes('mì') is true) and
+        // permanently shadow this branch.
+        if (lowDish.includes('bánh mì')) {
+          carbLabel = 'bánh mì';
           carbIcon = '🥖';
-          carbDensity = 0.5;
+        } else if (lowDish.includes('phở') || lowDish.includes('bún') || lowDish.includes('mì')) {
+          carbLabel = 'bún/phở';
+          carbIcon = '🍜';
+        } else if (lowDish.includes('cháo')) {
+          carbLabel = 'cháo đặc';
+          carbIcon = '🍲';
+        } else if (lowDish.includes('xôi')) {
+          carbLabel = 'xôi/nếp';
+          carbIcon = '🍙';
+        } else if (lowDish.includes('cơm lứt')) {
+          carbLabel = 'cơm gạo lứt';
         }
 
-        const isSuaHat = lowDish.includes('sữa hạt');
-        const wCarb = roundToStep(mCarbG / carbDensity, 5);
-        ingredients.push({
-          icon: carbIcon,
-          amount: wCarb,
-          unit: 'g',
-          label: isSuaHat ? carbName : `${carbName} chín`,
-        });
+        const carbComp = getFoodComposition(carbLabel);
+        const wCarb = roundToStep((mCarbG / carbComp.carbPer100) * 100, 5);
+        ingredients.push({ icon: carbIcon, amount: wCarb, unit: 'g', label: `${carbLabel} chín` });
 
-        // proName/wPro/fatFromMeat/wFat are computed unconditionally (matching legacy,
-        // where they're plain local vars in the main-meal branch) — only the *rendering*
-        // of the protein and veggie lines is skipped for "sữa hạt" dishes. Critically,
-        // the legacy code does NOT skip the fat line for "sữa hạt" (no such guard existed
-        // on that branch) — preserved here exactly, even though it looks asymmetric.
-        let proName = 'thịt/cá/trứng';
-        if (lowDish.includes('gà')) proName = 'thịt gà';
-        else if (lowDish.includes('bò')) proName = 'thịt bò';
-        else if (
-          lowDish.includes('cá') ||
-          lowDish.includes('tôm') ||
-          lowDish.includes('mực') ||
-          lowDish.includes('cua')
-        )
-          proName = 'cá/tôm/hải sản';
-        else if (lowDish.includes('đậu phụ') || lowDish.includes('chay')) proName = 'đậu phụ';
-        else if (
-          lowDish.includes('lợn') ||
-          lowDish.includes('heo') ||
-          lowDish.includes('sườn') ||
-          lowDish.includes('thịt băm')
-        )
-          proName = 'thịt lợn nạc';
+        let proLabel = 'thịt/cá/trứng';
+        if (lowDish.includes('gà')) proLabel = 'thịt gà';
+        else if (lowDish.includes('bò')) proLabel = 'thịt bò';
+        else if (lowDish.includes('cá') || lowDish.includes('tôm') || lowDish.includes('mực') || lowDish.includes('cua'))
+          proLabel = 'cá/tôm/hải sản';
+        else if (lowDish.includes('đậu phụ') || lowDish.includes('chay')) proLabel = 'đậu phụ';
+        else if (lowDish.includes('lợn') || lowDish.includes('heo') || lowDish.includes('sườn') || lowDish.includes('thịt băm'))
+          proLabel = 'thịt lợn nạc';
 
         const isGrilled = lowDish.includes('nướng') || lowDish.includes('áp chảo');
-        if (isGrilled) proName += ' (nướng/áp chảo ít dầu)';
-
-        const proDensity = proName === 'đậu phụ' ? 0.1 : 0.2;
-        const wPro = roundToStep(mProG / proDensity, 5);
-        if (!isSuaHat) {
-          ingredients.push({ icon: '🥩', amount: wPro, unit: 'g', label: `${proName} chín` });
-        }
+        const proComp = getFoodComposition(proLabel);
+        const wPro = roundToStep((mProG / proComp.proteinPer100) * 100, 5);
+        const proDisplayLabel = isGrilled ? `${proLabel} (nướng/áp chảo ít dầu)` : proLabel;
+        ingredients.push({ icon: '🥩', amount: wPro, unit: 'g', label: `${proDisplayLabel} chín` });
 
         const isCongee = lowDish.includes('cháo');
-        if (!isCongee && !isSuaHat) {
+        if (!isCongee) {
           let wVeg = months < 24 ? 50 : months < 72 ? 80 : 120;
-          let vegName = 'rau xanh chín';
-          const vegIcon = '🥗';
+          let vegLabel = 'rau xanh chín';
           if (lowDish.includes('salad')) {
-            vegName = 'salad rau củ tươi';
+            vegLabel = 'salad rau củ tươi';
             wVeg = wVeg * 1.5;
           }
-          ingredients.push({ icon: vegIcon, amount: Math.round(wVeg), unit: 'g', label: vegName });
+          ingredients.push({ icon: '🥗', amount: Math.round(wVeg), unit: 'g', label: vegLabel });
         }
 
-        let fatFromMeat = wPro * 0.05; // rough estimate
-        if (statusKey.includes('Béo phì')) fatFromMeat = wPro * 0.02; // lean
-        else if (statusKey.includes('Suy dinh')) fatFromMeat = wPro * 0.08; // fatty
-        if (isGrilled) fatFromMeat = wPro * 0.02; // very lean
+        // Fat naturally present in the weighed protein portion, using that
+        // ingredient's real fat-per-100g — then a status/preparation
+        // multiplier for the same clinical intent as before (leaner
+        // preparation advised for overweight children, richer for
+        // malnourished ones, less oil retained when grilled).
+        let fatMultiplier = 1;
+        if (statusKey.includes('Béo phì')) fatMultiplier = 0.4;
+        else if (statusKey.includes('Suy dinh')) fatMultiplier = 1.6;
+        if (isGrilled) fatMultiplier = 0.4;
+        const fatFromMeat = wPro * (proComp.fatPer100 / 100) * fatMultiplier;
 
         const addedFat = Math.max(0, mLipidG - fatFromMeat);
         const wFat = Math.round(addedFat);
 
         if (wFat > 2) {
           if (statusKey.includes('Béo phì') || statusKey.includes('Thừa cân')) {
-            ingredients.push({
-              icon: '🥜',
-              amount: wFat * 2,
-              unit: 'g',
-              label: 'hạt dinh dưỡng (óc chó, macca) thay dầu',
-            });
+            const nutComp = getFoodComposition('hạt dinh dưỡng (óc chó, macca)');
+            const oilComp = getFoodComposition('dầu/mỡ');
+            // same fat-gram target, expressed as the lower-fat-density nut mix instead of pure oil
+            const nutGrams = Math.round((wFat * oilComp.fatPer100) / nutComp.fatPer100);
+            ingredients.push({ icon: '🥜', amount: nutGrams, unit: 'g', label: 'hạt dinh dưỡng (óc chó, macca) thay dầu' });
           } else {
             ingredients.push({ icon: '🫒', amount: wFat, unit: 'ml', label: 'dầu/mỡ' });
           }

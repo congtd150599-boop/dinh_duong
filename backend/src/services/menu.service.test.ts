@@ -104,6 +104,43 @@ describe('buildMenuWithQuantities — dish keyword classification', () => {
     expect(dish.ingredients.some((i) => i.label.includes('rau'))).toBe(false);
   });
 
+  it('"bánh mì" dish gets its own carb label, not misclassified as bún/phở (bug fix — "bánh mì".includes("mì") used to shadow it)', () => {
+    const menu = buildMenuWithQuantities({
+      baseMenu: {
+        'Sáng': ['Bánh mì trứng pate'],
+        'Phụ sáng': ['—'],
+        'Trưa': ['—'],
+        'Phụ chiều': ['—'],
+        'Tối': ['—'],
+        'Phụ tối': ['—'],
+        'Ghi chú': '',
+      },
+      statusKey: 'Bình thường',
+      ...base,
+    });
+    const dish = menu['Sáng'][0] as MenuDish;
+    expect(dish.ingredients.some((i) => i.label.includes('bánh mì'))).toBe(true);
+    expect(dish.ingredients.some((i) => i.label.includes('bún/phở'))).toBe(false);
+  });
+
+  it('"Sữa cao năng lượng" (spelled out) matches the same branch as "Sữa cao NL" (bug fix — spelling mismatch)', () => {
+    const menu = buildMenuWithQuantities({
+      baseMenu: {
+        'Sáng': ['—'],
+        'Phụ sáng': ['Sữa cao năng lượng'],
+        'Trưa': ['—'],
+        'Phụ chiều': ['—'],
+        'Tối': ['—'],
+        'Phụ tối': ['—'],
+        'Ghi chú': '',
+      },
+      statusKey: 'Bình thường',
+      ...base,
+    });
+    const dish = menu['Phụ sáng'][0] as MenuDish;
+    expect(dish.ingredients.some((i) => i.label === 'sữa đặc trị')).toBe(true);
+  });
+
   it('obesity/overweight status substitutes "hạt dinh dưỡng" instead of "dầu/mỡ"', () => {
     const menu = buildMenuWithQuantities({
       baseMenu: {

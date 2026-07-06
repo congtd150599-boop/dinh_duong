@@ -43,6 +43,10 @@ Backend có `"postinstall": "prisma generate"` trong `package.json` — vì Pris
 - `DATABASE_URL` dùng tên service Docker (`postgres:5432`) — chỉ resolve được **trong** mạng Docker, backend container gọi được nhưng máy host thì không.
 - `VITE_API_URL` dùng `localhost` — vì trình duyệt (chạy trên host, không phải trong container) là bên gọi API, không phải Vite dev server.
 
+## Đăng nhập / tài khoản đầu tiên
+
+Backend yêu cầu `JWT_SECRET` trong `.env` — thiếu là server **từ chối khởi động** (fail fast, không dùng secret mặc định không an toàn). Nếu bảng `User` đang trống lúc server khởi động, và `ADMIN_EMAIL`/`ADMIN_PASSWORD` đã có trong `.env`, hệ thống tự tạo 1 tài khoản admin đầu tiên (xem `bootstrapAdminIfNeeded` trong `auth.service.ts`) — chỉ chạy đúng 1 lần, các lần sau bảng đã có dữ liệu nên bị bỏ qua. Đổi mật khẩu admin sau đó qua tab "Người dùng" (Đặt lại mật khẩu), không qua `.env`.
+
 ## Migration Prisma
 
 Luôn chạy migration **trong container backend**, không chạy trên host Windows (tránh lệch binary engine Prisma giữa 2 hệ điều hành):

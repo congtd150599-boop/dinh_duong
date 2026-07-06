@@ -13,6 +13,16 @@ export const labInputsSchema = z.object({
   tg: z.number().nullable().optional(),
 });
 
+export const menuFiltersSchema = z.object({
+  noSeafood: z.boolean().optional(),
+  noEgg: z.boolean().optional(),
+  noDairy: z.boolean().optional(),
+  noPeanutNuts: z.boolean().optional(),
+  vegetarian: z.boolean().optional(),
+  noPork: z.boolean().optional(),
+  noBeef: z.boolean().optional(),
+});
+
 export const assessmentInputSchema = z.object({
   name: z.string().trim().min(1, 'name is required'),
   dob: isoDate,
@@ -23,6 +33,8 @@ export const assessmentInputSchema = z.object({
   gender: z.enum(['Nam', 'Nữ']),
   tuvan: z.enum(['Có', 'Không']),
   revisit: isoDate.nullable().optional(),
+  guardianEmail: z.string().trim().email('Email không hợp lệ').nullable().optional(),
+  menuFilters: menuFiltersSchema.optional(),
   labs: labInputsSchema.default({}),
 });
 

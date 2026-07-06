@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import express, { Router } from 'express';
+import { requireRole } from '../middleware/require-auth.middleware';
 import {
   exportGrowthStandardsCsv,
   GrowthStandardsImportError,
@@ -26,6 +27,7 @@ export function buildGrowthStandardsRouter(prisma: PrismaClient): Router {
   // Raw CSV body, not JSON — only this route needs text parsing.
   router.post(
     '/import',
+    requireRole('admin'),
     express.text({ type: '*/*', limit: '2mb' }),
     asyncHandler(async (req, res) => {
       if (typeof req.body !== 'string' || !req.body.trim()) {

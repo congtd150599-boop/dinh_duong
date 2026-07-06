@@ -20,6 +20,7 @@ export async function createPatient(prisma: PrismaClient, input: AssessmentInput
       height: result.height,
       muac: result.muac,
       revisit: result.revisit ? new Date(result.revisit) : null,
+      guardianEmail: result.guardianEmail ?? null,
       tuvan: result.tuvan,
       labCa: input.labs.ca ?? null,
       labVitD: input.labs.vitD ?? null,

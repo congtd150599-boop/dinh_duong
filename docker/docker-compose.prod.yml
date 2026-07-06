@@ -21,6 +21,10 @@ services:
       context: ..
       dockerfile: backend/Dockerfile
     restart: unless-stopped
+    # See docker-compose.dev.yml's comment on env_file — JWT_SECRET/ADMIN_* need
+    # their real .env values, not compose-interpolation defaults.
+    env_file:
+      - ../.env
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql://dinhduong:dinhduong_dev_password@postgres:5432/dinhduong?schema=public}
       PORT: 4000

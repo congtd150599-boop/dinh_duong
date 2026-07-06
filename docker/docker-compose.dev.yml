@@ -23,6 +23,14 @@ services:
       context: ..
       dockerfile: backend/Dockerfile.dev
     restart: unless-stopped
+    # `docker compose -f docker/...` resolves .env relative to this compose
+    # file's own directory for interpolation (${VAR:-default} above), NOT the
+    # repo-root .env — that only matches by coincidence for vars whose default
+    # equals .env.example's shipped value. JWT_SECRET/ADMIN_* have no safe
+    # default, so they're loaded for real via env_file (resolved the same way
+    # as the ../backend volume path below: relative to this file, i.e. repo root).
+    env_file:
+      - ../.env
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql://dinhduong:dinhduong_dev_password@postgres:5432/dinhduong?schema=public}
       DATABASE_URL_TEST: ${DATABASE_URL_TEST:-postgresql://dinhduong:dinhduong_dev_password@postgres:5432/dinhduong_test?schema=public}

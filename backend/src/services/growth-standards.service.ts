@@ -8,8 +8,16 @@ export interface GrowthStandardRecord {
   gender: Gender;
   metric: GrowthMetric;
   months: number;
-  median: number;
+  median: number; // the LMS "M" parameter
+  l: number | null; // LMS "L" (skewness) — null only for legacy rows imported before the LMS upgrade
+  s: number | null; // LMS "S" (coefficient of variation)
   source: string;
+}
+
+export interface LmsParams {
+  l: number;
+  m: number;
+  s: number;
 }
 
 function keyOf(gender: Gender, metric: GrowthMetric, months: number): string {
@@ -43,6 +51,22 @@ export function getHfaMedian(gender: Gender, months: number): number {
   return cache.get(keyOf(gender, 'HFA', capped))?.median ?? cache.get(keyOf(gender, 'HFA', 228))?.median ?? 150;
 }
 
+/** Real WHO LMS parameters for weight-for-age — powers the actual Z-score math (see z-score.service.ts). Null past 60 months or if this row predates the LMS upgrade. */
+export function getWfaLms(gender: Gender, months: number): LmsParams | null {
+  if (months > 60) return null;
+  const r = cache.get(keyOf(gender, 'WFA', months));
+  if (!r || r.l == null || r.s == null) return null;
+  return { l: r.l, m: r.median, s: r.s };
+}
+
+/** Real WHO LMS parameters for height-for-age, capped at 228 months like getHfaMedian. */
+export function getHfaLms(gender: Gender, months: number): LmsParams | null {
+  const capped = Math.min(months, 228);
+  const r = cache.get(keyOf(gender, 'HFA', capped)) ?? cache.get(keyOf(gender, 'HFA', 228));
+  if (!r || r.l == null || r.s == null) return null;
+  return { l: r.l, m: r.median, s: r.s };
+}
+
 export function getAllRecords(): GrowthStandardRecord[] {
   return [...cache.values()].sort((a, b) => a.gender.localeCompare(a.gender) || a.metric.localeCompare(b.metric) || a.months - b.months);
 }
@@ -57,6 +81,8 @@ export async function loadFromDatabase(prisma: PrismaClient): Promise<number> {
       metric: r.metric as GrowthMetric,
       months: r.months,
       median: r.median,
+      l: r.l,
+      s: r.s,
       source: r.source,
     })),
   );

@@ -1,13 +1,10 @@
-// Verbatim port of legacy/index.html classifyZ() (lines 2344-2364) and the inline
-// Z-score math from calculate() (lines 2192-2201).
-//
-// NOTE — clinical risk flag (see project memory / plan "Bối cảnh"): this is the
-// ORIGINAL simplified approximation, NOT the real WHO LMS method. It computes
-// Z as a fixed-coefficient percentage deviation from the median:
-//   Z = (value - median) / (median * coefficient)
-// where coefficient is 0.14 (WFA), 0.12 (WFH), 0.06 (HFA). Do not "fix" this
-// without an explicit, separately-tracked decision — tests below intentionally
-// pin this exact (approximate) formula.
+// Real WHO LMS Z-score method (replaces the previous flat-coefficient
+// approximation — see git history / project memory for that decision).
+// Z = ((X/M)^L - 1) / (L*S) for L != 0, else ln(X/M)/S.
+// L, M, S come from the official WHO reference tables (growth-standards.service.ts
+// for WFA/HFA, wfh-lms.service.ts for WFH) — see backend/scripts/generate-lms-growth-data.mjs
+// and backend/src/data/*.ts for sourcing.
+import type { LmsParams } from './growth-standards.service';
 
 export type ZType = 'wfa' | 'hfa' | 'wfh';
 
@@ -41,28 +38,42 @@ export interface ZScores {
   wfh: string;
 }
 
+/** The standard WHO LMS Z-score formula. Exported for direct unit testing against known (l,m,s,x) tuples. */
+export function computeLmsZ(x: number, lms: LmsParams): number {
+  const { l, m, s } = lms;
+  return l === 0 ? Math.log(x / m) / s : (Math.pow(x / m, l) - 1) / (l * s);
+}
+
 export function computeZScores(params: {
   weight: number;
   height: number;
-  whoWeight: number | null;
-  whoHeight: number;
+  wfaLms: LmsParams | null;
+  hfaLms: LmsParams | null;
+  wfhLms: LmsParams | null;
 }): ZScores {
-  const { weight, height, whoWeight, whoHeight } = params;
+  const { weight, height, wfaLms, hfaLms, wfhLms } = params;
 
   let wfaZ: number | null = null;
   let wfhZ: number | null = null;
+  // wfaLms/wfhLms are null past 60 months (WHO doesn't publish either past 5y);
+  // wfhLms can also be null within 0-60mo if the child's measured height/length
+  // falls outside the WHO table's tabulated range (45-110cm / 65-120cm) — an
+  // extremely rare edge case, kept distinct from the ">5 tuổi" message below.
   let wfa = 'Không áp dụng (>5 Tuổi)';
   let wfh = 'Không áp dụng (>5 Tuổi)';
 
-  if (whoWeight !== null) {
-    wfaZ = (weight - whoWeight) / (whoWeight * 0.14);
-    const wfhRef = whoWeight * (height / whoHeight);
-    wfhZ = (weight - wfhRef) / (wfhRef * 0.12);
+  if (wfaLms) {
+    wfaZ = computeLmsZ(weight, wfaLms);
     wfa = classifyZ(wfaZ, 'wfa');
+  }
+  if (wfhLms) {
+    wfhZ = computeLmsZ(weight, wfhLms);
     wfh = classifyZ(wfhZ, 'wfh');
+  } else if (wfaLms) {
+    wfh = 'Không áp dụng (chiều cao ngoài bảng chuẩn)';
   }
 
-  const hfaZ = (height - whoHeight) / (whoHeight * 0.06);
+  const hfaZ = hfaLms ? computeLmsZ(height, hfaLms) : 0;
   const hfa = classifyZ(hfaZ, 'hfa');
 
   return { wfaZ, wfhZ, hfaZ, wfa, hfa, wfh };

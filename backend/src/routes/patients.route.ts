@@ -1,5 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
+import { requireRole } from '../middleware/require-auth.middleware';
 import { createPatient, deletePatient, exportPatientsCsv, getPatient, listPatients } from '../services/patient.service';
 import { asyncHandler } from '../utils/async-handler';
 import { assessmentInputSchema } from '../validation/assessment-input.schema';
@@ -56,6 +57,7 @@ export function buildPatientsRouter(prisma: PrismaClient): Router {
 
   router.delete(
     '/:id',
+    requireRole('admin', 'bac_si'),
     asyncHandler(async (req, res) => {
       const deleted = await deletePatient(prisma, req.params.id);
       if (!deleted) {

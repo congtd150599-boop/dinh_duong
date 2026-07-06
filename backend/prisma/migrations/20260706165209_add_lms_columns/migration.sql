@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "GrowthStandardPoint" ADD COLUMN     "l" DOUBLE PRECISION,
+ADD COLUMN     "s" DOUBLE PRECISION;
