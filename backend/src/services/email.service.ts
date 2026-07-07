@@ -28,12 +28,18 @@ function getTransporter(): nodemailer.Transporter | null {
   return transporter;
 }
 
-export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
+export interface EmailAttachment {
+  filename: string;
+  content: Buffer;
+}
+
+export async function sendEmail(to: string, subject: string, html: string, attachments?: EmailAttachment[]): Promise<void> {
   const t = getTransporter();
   if (!t) {
-    console.log(`[email dry-run] SMTP chưa được cấu hình — sẽ gửi tới ${to}: "${subject}"`);
+    const attachmentNote = attachments?.length ? ` (kèm ${attachments.length} tệp)` : '';
+    console.log(`[email dry-run] SMTP chưa được cấu hình — sẽ gửi tới ${to}: "${subject}"${attachmentNote}`);
     return;
   }
   const from = process.env.SMTP_FROM || DEFAULT_FROM;
-  await t.sendMail({ from, to, subject, html });
+  await t.sendMail({ from, to, subject, html, attachments });
 }

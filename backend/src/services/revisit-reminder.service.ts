@@ -8,9 +8,14 @@ function reminderEmailHtml(patientName: string, revisitDate: Date): string {
 
 /**
  * Scans for patients whose revisit date falls within the reminder window,
- * have a guardian email, and haven't been reminded yet — sends one email per
- * match and marks revisitReminderSentAt so the next scan never double-sends.
- * A failure on one patient (bad address, SMTP hiccup) doesn't stop the batch.
+ * whose child has at least one guardian (Bố or Mẹ) with an email on file,
+ * and haven't been reminded yet — sends one email to EVERY such guardian
+ * (both parents get notified when both have an email), then marks
+ * revisitReminderSentAt once per patient so the next scan never double-sends.
+ * Reads guardians from Child (not this visit's own row) so a follow-up visit
+ * that didn't re-type contact info still gets reminded, as long as ANY past
+ * visit for that child ever captured one. A failure sending to one guardian
+ * (bad address, SMTP hiccup) doesn't stop the others, or the rest of the batch.
  */
 export async function scanAndSendRevisitReminders(prisma: PrismaClient): Promise<number> {
   const leadDays = Number(process.env.REVISIT_REMINDER_DAYS_BEFORE ?? 3);
@@ -22,19 +27,27 @@ export async function scanAndSendRevisitReminders(prisma: PrismaClient): Promise
   const candidates = await prisma.patient.findMany({
     where: {
       revisit: { gte: today, lte: windowEnd },
-      guardianEmail: { not: null },
       revisitReminderSentAt: null,
+      child: { guardians: { some: { email: { not: null } } } },
     },
+    include: { child: { include: { guardians: true } } },
   });
 
   let sent = 0;
   for (const patient of candidates) {
-    try {
-      await sendEmail(patient.guardianEmail!, 'Nhắc lịch tái khám dinh dưỡng', reminderEmailHtml(patient.name, patient.revisit!));
+    const recipients = patient.child.guardians.filter((g) => g.email);
+    let anySucceeded = false;
+    for (const guardian of recipients) {
+      try {
+        await sendEmail(guardian.email!, 'Nhắc lịch tái khám dinh dưỡng', reminderEmailHtml(patient.name, patient.revisit!));
+        anySucceeded = true;
+      } catch (err) {
+        console.error(`[revisit-reminder] Gửi nhắc lịch thất bại cho bệnh nhân ${patient.id} (${guardian.relationship}):`, err);
+      }
+    }
+    if (anySucceeded) {
       await prisma.patient.update({ where: { id: patient.id }, data: { revisitReminderSentAt: new Date() } });
       sent++;
-    } catch (err) {
-      console.error(`[revisit-reminder] Gửi nhắc lịch thất bại cho bệnh nhân ${patient.id}:`, err);
     }
   }
   return sent;

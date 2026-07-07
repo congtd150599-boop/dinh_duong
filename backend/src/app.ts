@@ -17,7 +17,11 @@ export function createApp(prisma: PrismaClient): Express {
   // in dev (frontend :5173 → backend :4000); production is same-origin via Nginx
   // (see frontend/nginx.conf) so this only matters in dev.
   app.use(cors({ origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173', credentials: true }));
-  app.use(express.json());
+  // 15mb (well above Express's 100kb default) so POST /api/patients/:id/send-report
+  // can carry a multi-page PDF report base64-encoded (~33% larger than raw)
+  // as a plain JSON field — avoids adding a multipart/multer dependency for
+  // what is, today, the only endpoint that needs a large body.
+  app.use(express.json({ limit: '15mb' }));
   app.use(cookieParser());
 
   const requireAuth = buildRequireAuth(prisma);

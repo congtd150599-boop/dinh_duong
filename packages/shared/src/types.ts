@@ -39,6 +39,29 @@ export interface MenuFilters {
   noBeef?: boolean;
 }
 
+export type GuardianRelationship = 'Bố' | 'Mẹ';
+
+/** Payload shape for creating/updating one guardian (Bố or Mẹ) — all fields but relationship are optional at this layer; service-level rules (name required if email/phone given, at least one guardian must have both email+phone) are enforced in guardian.service.ts/patient.service.ts. */
+export interface GuardianInput {
+  relationship: GuardianRelationship;
+  name?: string | null;
+  dob?: string | null; // ISO date
+  address?: string | null;
+  email?: string | null;
+  phone?: string | null;
+}
+
+/** Wire shape of a persisted Guardian as returned by /api/children/:id/history. */
+export interface GuardianRecord {
+  id: string;
+  relationship: GuardianRelationship;
+  name: string | null;
+  dob: string | null;
+  address: string | null;
+  email: string | null;
+  phone: string | null;
+}
+
 export interface AssessmentInput {
   name: string;
   dob: string; // ISO date
@@ -49,7 +72,14 @@ export interface AssessmentInput {
   gender: Gender;
   tuvan: TuVan;
   revisit?: string | null;
-  guardianEmail?: string | null;
+  /**
+   * Quick-entry contact captured in InputTab for one parent (whichever the
+   * doctor is talking to). Required by the backend only when the resolved
+   * child doesn't already have a guardian with both email and phone on file
+   * — see patient.service.ts's hasQualifyingGuardian check. Omitted when an
+   * existing, already-qualifying child was selected.
+   */
+  representativeGuardian?: GuardianInput | null;
   menuFilters?: MenuFilters;
   labs: LabInputs;
   /** Set when the doctor picked an existing child from the search box in InputTab; omitted/null lets the backend find-or-create by name+dob. */
@@ -108,15 +138,15 @@ export interface AssessmentResult {
   statusKey: string;
   tuvan: TuVan;
   revisit: string | null;
-  guardianEmail: string | null;
 }
 
-/** Wire shape of a persisted Patient record as returned by the /api/patients endpoints. */
+/** Wire shape of a persisted Patient record as returned by the /api/patients endpoints. hasQualifyingGuardian is read-only here, computed from the child's Guardian rows (the actual source of truth — see ChildRecord/GuardianRecord, edited via PUT /api/children/:id/guardians). */
 export interface PatientRecord {
   id: string;
   createdAt: string;
   updatedAt: string;
   childId: string;
+  hasQualifyingGuardian: boolean;
   name: string;
   dob: string;
   examDate: string;
@@ -125,7 +155,6 @@ export interface PatientRecord {
   height: number;
   muac: number | null;
   revisit: string | null;
-  guardianEmail: string | null;
   tuvan: TuVan;
   labCa: number | null;
   labVitD: number | null;
@@ -219,4 +248,6 @@ export interface ChildRecord {
   gender: Gender;
   /** Most recent visit's examDate for this child, or null if somehow it has none — helps a doctor disambiguate same-name children in the search dropdown. */
   lastExamDate: string | null;
+  /** True if at least one Guardian (Bố or Mẹ) has both email and phone on file — cheap summary for search results/list views that don't need the full guardian list. */
+  hasQualifyingGuardian: boolean;
 }

@@ -22,7 +22,6 @@ model Patient {
   muac      Float?
   revisit   DateTime?
   tuvan     String // 'Có' | 'Không'
-  guardianEmail          String? // optional — reminder emails just don't get sent for a patient without one
   revisitReminderSentAt  DateTime? // set once the reminder email succeeds, so the daily scan never double-sends
 
   // Links this visit to the child's persistent record (see Child) so multiple
@@ -71,14 +70,38 @@ model Patient {
 // record was picked) — this is what lets the app group visits for trend
 // charts and growth-faltering alerts instead of just guessing by name+dob.
 model Child {
-  id        String    @id @default(cuid())
-  createdAt DateTime  @default(now())
+  id        String     @id @default(cuid())
+  createdAt DateTime   @default(now())
   name      String
   dob       DateTime
   gender    String // 'Nam' | 'Nữ'
   patients  Patient[]
+  guardians Guardian[]
 
   @@index([name])
+}
+
+// Bố/Mẹ (or in principle any future relationship) of a Child — kept here, not
+// per-visit on Patient, so contact info always reflects the latest value
+// regardless of which visit last updated it (a doctor forgetting to re-type
+// it on a follow-up visit no longer breaks scanAndSendRevisitReminders()).
+// All fields nullable at the DB level — the real "at least one guardian has
+// both email and phone" rule is enforced in guardian.service.ts/patient.service.ts,
+// not here (Postgres can't cleanly check "at least one of N related rows").
+model Guardian {
+  id           String    @id @default(cuid())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  childId      String
+  child        Child     @relation(fields: [childId], references: [id])
+  relationship String // 'Bố' | 'Mẹ' — validated via zod at the API boundary, not a Postgres enum
+  name         String?
+  dob          DateTime?
+  address      String?
+  email        String?
+  phone        String?
+
+  @@unique([childId, relationship])
 }
 
 // Staff accounts for login + role-based access control.

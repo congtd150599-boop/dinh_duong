@@ -1,4 +1,4 @@
-import type { AssessmentInput, ChildRecord, Gender, MenuFilters, TuVan } from '@dinhduong/shared';
+import type { AssessmentInput, ChildRecord, Gender, GuardianRelationship, MenuFilters, TuVan } from '@dinhduong/shared';
 import { useMemo, useState } from 'react';
 import { useAppState } from '../../context/AppStateContext';
 import { useToast } from '../shared/ToastContext';
@@ -30,7 +30,11 @@ interface FormState {
   examDate: string;
   gender: Gender;
   revisit: string;
+  /** Quick-entry contact for whichever parent the doctor is talking to right now — required unless the selected child already has a qualifying guardian (see selectedChildHasQualifyingGuardian). Full dual-parent detail (dob/address/the other parent) is filled in later via ChildHistoryPanel. */
+  guardianRelationship: GuardianRelationship;
+  guardianName: string;
   guardianEmail: string;
+  guardianPhone: string;
   tuvan: TuVan;
   weight: string;
   height: string;
@@ -39,6 +43,8 @@ interface FormState {
   menuFilters: Required<MenuFilters>;
   /** Set when the doctor picked an existing child from the search dropdown below "Họ và tên" — cleared as soon as name/dob is edited again, so a new visit never silently attaches to the wrong child. */
   selectedChildId: string | null;
+  /** From the selected child's search result — true means InputTab's guardian fields aren't required (someone already qualifies). Resets to false when selectedChildId is cleared. */
+  selectedChildHasQualifyingGuardian: boolean;
 }
 
 const today = new Date().toISOString().slice(0, 10);
@@ -59,7 +65,10 @@ const initialForm: FormState = {
   examDate: today,
   gender: 'Nam',
   revisit: '',
+  guardianRelationship: 'Mẹ',
+  guardianName: '',
   guardianEmail: '',
+  guardianPhone: '',
   tuvan: 'Có',
   weight: '',
   height: '',
@@ -67,6 +76,7 @@ const initialForm: FormState = {
   labs: { ca: '', vitD: '', zn: '', hb: '', fe: '', ferritin: '', chol: '', tg: '' },
   menuFilters: initialMenuFilters,
   selectedChildId: null,
+  selectedChildHasQualifyingGuardian: false,
 };
 
 const MENU_FILTER_OPTIONS: { key: keyof MenuFilters; label: string }[] = [
@@ -85,9 +95,15 @@ function toNullableNumber(raw: string): number | null {
   return Number.isNaN(n) ? null : n;
 }
 
-function toNullableString(raw: string): string | null {
-  const trimmed = raw.trim();
-  return trimmed === '' ? null : trimmed;
+/** true if the doctor started filling in the representative guardian but didn't finish all 3 fields (name+email+phone) — this is treated as a mistake, not "no guardian entered". */
+function isGuardianPartiallyFilled(form: FormState): boolean {
+  const filled = [form.guardianName.trim(), form.guardianEmail.trim(), form.guardianPhone.trim()].filter(Boolean).length;
+  return filled > 0 && filled < 3;
+}
+
+/** A brand-new child (no selection) or an existing child that doesn't yet have anyone with both email+phone must provide the representative guardian before saving. */
+function isGuardianRequired(form: FormState): boolean {
+  return !form.selectedChildHasQualifyingGuardian;
 }
 
 function buildAssessmentInput(form: FormState): AssessmentInput | null {
@@ -95,6 +111,11 @@ function buildAssessmentInput(form: FormState): AssessmentInput | null {
   const height = parseFloat(form.height);
   if (!form.name.trim() || !form.dob || !form.examDate || !weight || !height) return null;
   if (weight <= 0 || height <= 0) return null;
+
+  const name = form.guardianName.trim();
+  const email = form.guardianEmail.trim();
+  const phone = form.guardianPhone.trim();
+  const representativeGuardian = name && email && phone ? { relationship: form.guardianRelationship, name, email, phone } : null;
 
   return {
     name: form.name.trim(),
@@ -106,7 +127,7 @@ function buildAssessmentInput(form: FormState): AssessmentInput | null {
     gender: form.gender,
     tuvan: form.tuvan,
     revisit: form.revisit || null,
-    guardianEmail: toNullableString(form.guardianEmail),
+    representativeGuardian,
     menuFilters: form.menuFilters,
     childId: form.selectedChildId,
     labs: {
@@ -125,7 +146,7 @@ function buildAssessmentInput(form: FormState): AssessmentInput | null {
 export function InputTab() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [nameFieldFocused, setNameFieldFocused] = useState(false);
-  const { setActiveTab, setCurrentResult } = useAppState();
+  const { setActiveTab, setCurrentResult, setCurrentPatientId, setCurrentAssessmentInput } = useAppState();
   const { showToast } = useToast();
   const createPatient = useCreatePatient();
   const { results: childSuggestions } = useSearchChildren(form.selectedChildId ? '' : form.name);
@@ -148,17 +169,27 @@ export function InputTab() {
 
   // Editing name/dob after a child was selected means the doctor no longer
   // means that exact record — clear the lock so save falls back to
-  // find-or-create by name+dob instead of silently misattaching this visit.
+  // find-or-create by name+dob instead of silently misattaching this visit,
+  // and re-require guardian info since we no longer know if this "new" child qualifies.
   function handleNameChange(value: string) {
-    setForm((f) => ({ ...f, name: value, selectedChildId: null }));
+    setForm((f) => ({ ...f, name: value, selectedChildId: null, selectedChildHasQualifyingGuardian: false }));
   }
   function handleDobChange(value: string) {
-    setForm((f) => ({ ...f, dob: value, selectedChildId: null }));
+    setForm((f) => ({ ...f, dob: value, selectedChildId: null, selectedChildHasQualifyingGuardian: false }));
   }
   function handleSelectChild(child: ChildRecord) {
-    setForm((f) => ({ ...f, name: child.name, dob: child.dob.slice(0, 10), gender: child.gender, selectedChildId: child.id }));
+    setForm((f) => ({
+      ...f,
+      name: child.name,
+      dob: child.dob.slice(0, 10),
+      gender: child.gender,
+      selectedChildId: child.id,
+      selectedChildHasQualifyingGuardian: child.hasQualifyingGuardian,
+    }));
     setNameFieldFocused(false);
   }
+
+  const guardianRequired = isGuardianRequired(form);
 
   function handleViewResult() {
     if (!result) {
@@ -166,6 +197,8 @@ export function InputTab() {
       return;
     }
     setCurrentResult(result);
+    setCurrentPatientId(null); // live preview, not yet saved
+    setCurrentAssessmentInput(assessmentInput); // lets ResultTab's own "Lưu hồ sơ" reuse this exact payload (incl. childId/representativeGuardian)
     setActiveTab('result');
   }
 
@@ -174,9 +207,18 @@ export function InputTab() {
       showToast('Vui lòng nhập đầy đủ thông tin bệnh nhân trước khi lưu!', 'error');
       return;
     }
+    if (isGuardianPartiallyFilled(form)) {
+      showToast('Vui lòng điền đủ cả Họ tên, Email và SĐT của người đại diện (hoặc để trống cả 3 nếu chưa có).', 'error');
+      return;
+    }
+    if (guardianRequired && !assessmentInput.representativeGuardian) {
+      showToast('Cần nhập người đại diện (Bố hoặc Mẹ) — bắt buộc có Họ tên, Email và Số điện thoại.', 'error');
+      return;
+    }
     createPatient.mutate(assessmentInput, {
       onSuccess: (patient) => {
         setCurrentResult(patient.fullResult);
+        setCurrentPatientId(patient.id);
         showToast(`✅ Đã lưu hồ sơ bệnh nhân "${patient.name}" vào nhật ký!`, 'success');
       },
       onError: () => showToast('Lỗi khi lưu hồ sơ. Vui lòng thử lại.', 'error'),
@@ -295,16 +337,55 @@ export function InputTab() {
             <input type="date" className="form-control" value={form.revisit} onChange={(e) => update('revisit', e.target.value)} />
           </div>
           <div className="form-group">
-            <label className="form-label">Email phụ huynh (để nhắc lịch tái khám)</label>
-            <input
-              type="email"
-              className="form-control"
-              placeholder="phuhuynh@email.com"
-              value={form.guardianEmail}
-              onChange={(e) => update('guardianEmail', e.target.value)}
+            <label className="form-label">
+              Người đại diện{guardianRequired && <span className="required">*</span>}
+            </label>
+            <SegmentedControl
+              options={[
+                { value: 'Bố' as GuardianRelationship, label: 'Bố' },
+                { value: 'Mẹ' as GuardianRelationship, label: 'Mẹ' },
+              ]}
+              value={form.guardianRelationship}
+              onChange={(v) => update('guardianRelationship', v)}
             />
-            <div className="form-hint">Tùy chọn — hệ thống tự gửi email nhắc trước ngày tái khám nếu có địa chỉ này.</div>
           </div>
+          <div className="form-group">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Họ tên người đại diện"
+              value={form.guardianName}
+              onChange={(e) => update('guardianName', e.target.value)}
+            />
+          </div>
+          <div className="grid-2">
+            <div className="form-group">
+              <input
+                type="email"
+                className="form-control"
+                placeholder="Email người đại diện"
+                value={form.guardianEmail}
+                onChange={(e) => update('guardianEmail', e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <input
+                type="tel"
+                className="form-control"
+                placeholder="SĐT người đại diện"
+                value={form.guardianPhone}
+                onChange={(e) => update('guardianPhone', e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="form-hint" style={{ marginTop: -8, marginBottom: 16 }}>
+            {guardianRequired
+              ? 'Bắt buộc — trẻ này chưa có ai đủ điều kiện liên hệ (họ tên + email + SĐT). Chỉ cần 1 người, có thể bổ sung người còn lại/ngày sinh/địa chỉ sau ở tab Nhật Ký BN → Lịch sử.'
+              : 'Đã có người đại diện đủ điều kiện — không cần nhập lại. Để trống, hoặc điền để cập nhật thông tin mới nhất.'}
+          </div>
+          {isGuardianPartiallyFilled(form) && (
+            <InfoBox tone="warn">Cần điền đủ cả Họ tên, Email và SĐT của người đại diện, hoặc để trống cả 3.</InfoBox>
+          )}
           <div className="form-group">
             <label className="form-label">Tư vấn dinh dưỡng</label>
             <SegmentedControl

@@ -23,6 +23,17 @@ export const menuFiltersSchema = z.object({
   noBeef: z.boolean().optional(),
 });
 
+// InputTab's quick "1 representative guardian" entry — if this object is
+// sent at all, name/email/phone must all be present (it's meant to satisfy
+// the "at least one qualifying guardian" rule in one go). dob/address are
+// left to the fuller edit form in ChildHistoryPanel, not captured here.
+export const representativeGuardianSchema = z.object({
+  relationship: z.enum(['Bố', 'Mẹ']),
+  name: z.string().trim().min(1, 'Cần nhập họ tên người đại diện'),
+  email: z.string().trim().email('Email không hợp lệ'),
+  phone: z.string().trim().min(8, 'Số điện thoại quá ngắn').max(20, 'Số điện thoại quá dài'),
+});
+
 export const assessmentInputSchema = z.object({
   name: z.string().trim().min(1, 'name is required'),
   dob: isoDate,
@@ -33,7 +44,7 @@ export const assessmentInputSchema = z.object({
   gender: z.enum(['Nam', 'Nữ']),
   tuvan: z.enum(['Có', 'Không']),
   revisit: isoDate.nullable().optional(),
-  guardianEmail: z.string().trim().email('Email không hợp lệ').nullable().optional(),
+  representativeGuardian: representativeGuardianSchema.nullable().optional(),
   menuFilters: menuFiltersSchema.optional(),
   labs: labInputsSchema.default({}),
   childId: z.string().cuid().nullable().optional(),

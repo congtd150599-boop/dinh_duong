@@ -51,4 +51,32 @@ describe('sendEmail', () => {
       expect.objectContaining({ to: 'parent@test.local', subject: 'Nhắc lịch' }),
     );
   });
+
+  it('passes attachments through to nodemailer when provided', async () => {
+    process.env.SMTP_HOST = 'smtp.test.local';
+    process.env.SMTP_USER = 'user';
+    process.env.SMTP_PASSWORD = 'pass';
+
+    const { sendEmail } = await import('./email.service');
+    const pdf = Buffer.from('%PDF-1.4 fake');
+    await sendEmail('parent@test.local', 'Báo cáo', '<p>Hi</p>', [{ filename: 'report.pdf', content: pdf }]);
+
+    expect(sendMailMock).toHaveBeenCalledWith(
+      expect.objectContaining({ attachments: [{ filename: 'report.pdf', content: pdf }] }),
+    );
+  });
+
+  it('dry-run with attachments logs the attachment count without throwing', async () => {
+    delete process.env.SMTP_HOST;
+    delete process.env.SMTP_USER;
+    delete process.env.SMTP_PASSWORD;
+
+    const { sendEmail } = await import('./email.service');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await sendEmail('parent@test.local', 'Báo cáo', '<p>Hi</p>', [{ filename: 'report.pdf', content: Buffer.from('x') }]);
+
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('kèm 1 tệp'));
+    logSpy.mockRestore();
+  });
 });

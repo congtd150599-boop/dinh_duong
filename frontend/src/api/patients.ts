@@ -16,3 +16,7 @@ export function getPatient(id: string): Promise<PatientRecord> {
 export function deletePatient(id: string): Promise<void> {
   return apiClient.delete(`/patients/${id}`);
 }
+
+export function sendPatientReport(id: string, pdfBase64: string): Promise<{ sent: number; recipients: string[] }> {
+  return apiClient.post(`/patients/${id}/send-report`, { pdfBase64 });
+}

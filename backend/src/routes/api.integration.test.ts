@@ -1,8 +1,12 @@
 import request from 'supertest';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { createApp } from '../app';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loginAsRole } from '../test-utils/auth-test-helper';
 import { testPrisma, truncateAllTables } from '../test-utils/test-prisma';
+
+const sendEmailMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock('../services/email.service', () => ({ sendEmail: sendEmailMock }));
+
+import { createApp } from '../app';
 
 const app = createApp(testPrisma);
 let agent: request.SuperAgentTest;
@@ -16,6 +20,7 @@ const validInput = {
   gender: 'Nam' as const,
   tuvan: 'Có' as const,
   labs: {},
+  representativeGuardian: { relationship: 'Mẹ' as const, name: 'Test Mẹ', email: 'me@test.local', phone: '0900000000' },
 };
 
 beforeAll(async () => {
@@ -30,6 +35,8 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await truncateAllTables();
+  sendEmailMock.mockClear();
+  sendEmailMock.mockResolvedValue(undefined);
 });
 
 afterAll(async () => {
@@ -113,6 +120,34 @@ describe('POST /api/patients + GET /api/patients', () => {
     const res = await agent.post('/api/patients').send({ ...validInput, childId: 'clnonexistentid00000000000' });
     expect(res.status).toBe(400);
   });
+
+  it('brand-new child with no representativeGuardian → 400 (must have a qualifying guardian)', async () => {
+    const { representativeGuardian: _representativeGuardian, ...withoutGuardian } = validInput;
+    const res = await agent.post('/api/patients').send(withoutGuardian);
+    expect(res.status).toBe(400);
+    const listRes = await agent.get('/api/patients');
+    expect(listRes.body).toHaveLength(0);
+  });
+
+  it('representativeGuardian is written onto the resolved Child, not the Patient row', async () => {
+    const created = await agent.post('/api/patients').send(validInput);
+    const history = await agent.get(`/api/children/${created.body.childId}/history`);
+    expect(history.body.guardians[0]).toMatchObject({ relationship: 'Mẹ', name: 'Test Mẹ', email: 'me@test.local', phone: '0900000000' });
+
+    const listRes = await agent.get('/api/patients');
+    expect(listRes.body.find((p: { id: string }) => p.id === created.body.id).hasQualifyingGuardian).toBe(true);
+  });
+
+  it('a follow-up visit for an already-qualifying child does not need representativeGuardian again', async () => {
+    const first = await agent.post('/api/patients').send(validInput);
+    const second = await agent
+      .post('/api/patients')
+      .send({ ...validInput, examDate: '2026-06-01', childId: first.body.childId, representativeGuardian: null });
+    expect(second.status).toBe(201);
+
+    const history = await agent.get(`/api/children/${first.body.childId}/history`);
+    expect(history.body.guardians).toHaveLength(1); // untouched, not duplicated or cleared
+  });
 });
 
 describe('GET/DELETE /api/patients/:id', () => {
@@ -175,5 +210,62 @@ describe('Auth enforcement', () => {
     const nurseAgent = await loginAsRole(app, 'dieu_duong');
     const res = await nurseAgent.delete(`/api/patients/${created.body.id}`);
     expect(res.status).toBe(403);
+  });
+});
+
+describe('POST /api/patients/:id/send-report', () => {
+  const pdfBase64 = Buffer.from('%PDF-1.4 fake report content').toString('base64');
+
+  it('a patient with a qualifying guardian → 200, sendEmail called with a PDF attachment', async () => {
+    const created = await agent.post('/api/patients').send(validInput);
+    const res = await agent.post(`/api/patients/${created.body.id}/send-report`).send({ pdfBase64 });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ sent: 1, recipients: ['me@test.local'] });
+    expect(sendEmailMock).toHaveBeenCalledWith(
+      'me@test.local',
+      expect.stringContaining('Nguyễn Văn A'),
+      expect.any(String),
+      [expect.objectContaining({ filename: expect.stringContaining('.pdf'), content: expect.any(Buffer) })],
+    );
+  });
+
+  it('sends to both guardians when both Bố and Mẹ have an email', async () => {
+    const created = await agent.post('/api/patients').send(validInput);
+    await agent
+      .put(`/api/children/${created.body.childId}/guardians`)
+      .send({ relationship: 'Bố', name: 'Test Bố', email: 'bo@test.local', phone: '0911111111' });
+
+    const res = await agent.post(`/api/patients/${created.body.id}/send-report`).send({ pdfBase64 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.sent).toBe(2);
+    expect(sendEmailMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('no guardian has an email → 400, no email sent', async () => {
+    const created = await agent.post('/api/patients').send(validInput);
+    // PUT /guardians itself refuses to leave a child with zero qualifying
+    // guardians (see children.integration.test.ts), so this state can only be
+    // reached by writing directly to the DB — exercised here purely to prove
+    // sendPatientReportEmail has its own independent guard, not just relying
+    // on that route-level protection.
+    await testPrisma.guardian.updateMany({ where: { childId: created.body.childId }, data: { email: null, phone: null } });
+
+    const res = await agent.post(`/api/patients/${created.body.id}/send-report`).send({ pdfBase64 });
+
+    expect(res.status).toBe(400);
+    expect(sendEmailMock).not.toHaveBeenCalled();
+  });
+
+  it('unknown patient id → 404', async () => {
+    const res = await agent.post('/api/patients/does-not-exist/send-report').send({ pdfBase64 });
+    expect(res.status).toBe(404);
+  });
+
+  it('missing pdfBase64 → 400', async () => {
+    const created = await agent.post('/api/patients').send(validInput);
+    const res = await agent.post(`/api/patients/${created.body.id}/send-report`).send({});
+    expect(res.status).toBe(400);
   });
 });

@@ -1,14 +1,22 @@
+import type { GuardianRecord, GuardianRelationship } from '@dinhduong/shared';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { upsertGuardian } from '../../api/children';
+import { ApiError } from '../../api/client';
 import { useChildHistory } from '../../hooks/useChildren';
 import { Card } from '../shared/Card';
 import { InfoBox } from '../shared/InfoBox';
+import { useToast } from '../shared/ToastContext';
 import { TrendChart } from './TrendChart';
 
 interface ChildHistoryPanelProps {
   childId: string;
   onBack: () => void;
+  /** Opens the guardian contact cards already in edit mode — used when a doctor jumps here specifically to add/fix contact info (e.g. from LogTab's "Liên hệ" column) rather than to browse growth history. */
+  autoEditContact?: boolean;
 }
 
-export function ChildHistoryPanel({ childId, onBack }: ChildHistoryPanelProps) {
+export function ChildHistoryPanel({ childId, onBack, autoEditContact }: ChildHistoryPanelProps) {
   const { data: history, isLoading } = useChildHistory(childId);
 
   return (
@@ -43,6 +51,25 @@ export function ChildHistoryPanel({ childId, onBack }: ChildHistoryPanelProps) {
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {!history.guardians.some((g) => g.email && g.phone) && (
+              <InfoBox tone="warn">Chưa có người đại diện nào đủ điều kiện liên hệ (cần cả email và số điện thoại) cho trẻ này.</InfoBox>
+            )}
+
+            <div className="grid-2" style={{ gap: 20, alignItems: 'start' }}>
+              <GuardianCard
+                childId={childId}
+                relationship="Bố"
+                guardian={history.guardians.find((g) => g.relationship === 'Bố')}
+                startEditing={autoEditContact}
+              />
+              <GuardianCard
+                childId={childId}
+                relationship="Mẹ"
+                guardian={history.guardians.find((g) => g.relationship === 'Mẹ')}
+                startEditing={autoEditContact}
+              />
+            </div>
+
             <Card icon="📊" iconBg="#E3F2FD" title="Biểu Đồ Xu Hướng">
               <div style={{ display: 'grid', gap: 24 }}>
                 <TrendChart
@@ -96,5 +123,129 @@ export function ChildHistoryPanel({ childId, onBack }: ChildHistoryPanelProps) {
         </>
       )}
     </div>
+  );
+}
+
+interface GuardianFormState {
+  name: string;
+  dob: string;
+  address: string;
+  email: string;
+  phone: string;
+}
+
+function toFormState(g: GuardianRecord | undefined): GuardianFormState {
+  return {
+    name: g?.name ?? '',
+    dob: g?.dob?.slice(0, 10) ?? '',
+    address: g?.address ?? '',
+    email: g?.email ?? '',
+    phone: g?.phone ?? '',
+  };
+}
+
+function GuardianCard({
+  childId,
+  relationship,
+  guardian,
+  startEditing,
+}: {
+  childId: string;
+  relationship: GuardianRelationship;
+  guardian: GuardianRecord | undefined;
+  startEditing?: boolean;
+}) {
+  const { showToast } = useToast();
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(!!startEditing);
+  const [form, setForm] = useState<GuardianFormState>(toFormState(guardian));
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      upsertGuardian(childId, {
+        relationship,
+        name: form.name.trim() || null,
+        dob: form.dob || null,
+        address: form.address.trim() || null,
+        email: form.email.trim() || null,
+        phone: form.phone.trim() || null,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['children', 'history', childId] });
+      setEditing(false);
+      showToast(`✅ Đã cập nhật thông tin ${relationship}.`, 'success');
+    },
+    onError: (err) => {
+      const message = err instanceof ApiError ? ((err.details as { error?: string })?.error ?? 'Cập nhật thất bại') : 'Cập nhật thất bại';
+      showToast(message, 'error');
+    },
+  });
+
+  function handleCancel() {
+    setForm(toFormState(guardian));
+    setEditing(false);
+  }
+
+  const qualifies = !!guardian?.email && !!guardian?.phone;
+
+  return (
+    <Card icon={relationship === 'Bố' ? '👨' : '👩'} iconBg="#E8F5E9" title={`Thông tin ${relationship}`}>
+      {editing ? (
+        <>
+          <div className="form-group">
+            <label className="form-label">Họ tên</label>
+            <input className="form-control" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </div>
+          <div className="grid-2">
+            <div className="form-group">
+              <label className="form-label">Ngày sinh</label>
+              <input type="date" className="form-control" value={form.dob} onChange={(e) => setForm({ ...form, dob: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Địa chỉ</label>
+              <input className="form-control" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} />
+            </div>
+          </div>
+          <div className="grid-2">
+            <div className="form-group">
+              <label className="form-label">Email</label>
+              <input type="email" className="form-control" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Số điện thoại</label>
+              <input type="tel" className="form-control" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-primary" onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+              {mutation.isPending ? 'Đang lưu...' : '💾 Lưu'}
+            </button>
+            <button className="btn-secondary" onClick={handleCancel}>
+              Hủy
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          {!guardian?.name && !guardian?.email && !guardian?.phone ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Chưa có thông tin.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 14 }}>
+              <div>
+                <strong>{guardian?.name || '—'}</strong>
+              </div>
+              {guardian?.dob && <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>Sinh {guardian.dob.slice(0, 10)}</div>}
+              {guardian?.address && <div style={{ color: 'var(--text-secondary)', fontSize: 13 }}>📍 {guardian.address}</div>}
+              <div>📧 {guardian?.email || '—'}</div>
+              <div>📱 {guardian?.phone || '—'}</div>
+              {qualifies && <span style={{ color: 'var(--success)', fontSize: 12 }}>✓ Đủ điều kiện liên hệ</span>}
+            </div>
+          )}
+          <button className="btn-secondary" style={{ marginTop: 12 }} onClick={() => setEditing(true)}>
+            ✏️ Sửa
+          </button>
+        </>
+      )}
+    </Card>
   );
 }

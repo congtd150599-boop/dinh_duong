@@ -1,5 +1,14 @@
 import type { Child, PrismaClient } from '@prisma/client';
-import { computeGrowthAlerts, type AssessmentResult, type ChildRecord, type Gender, type GrowthAlert, type VisitPoint } from '@dinhduong/shared';
+import {
+  computeGrowthAlerts,
+  type AssessmentResult,
+  type ChildRecord,
+  type Gender,
+  type GrowthAlert,
+  type GuardianRecord,
+  type VisitPoint,
+} from '@dinhduong/shared';
+import { getGuardiansForChild, hasQualifyingGuardian } from './guardian.service';
 
 export function normalizeName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -26,13 +35,14 @@ export async function findOrCreateChild(prisma: PrismaClient, input: FindOrCreat
 const SEARCH_MIN_LENGTH = 2;
 const SEARCH_LIMIT = 20;
 
-function toChildRecord(child: Child, lastExamDate: Date | null): ChildRecord {
+function toChildRecord(child: Child, lastExamDate: Date | null, qualifies: boolean): ChildRecord {
   return {
     id: child.id,
     name: child.name,
     dob: child.dob.toISOString(),
     gender: child.gender as Gender,
     lastExamDate: lastExamDate ? lastExamDate.toISOString() : null,
+    hasQualifyingGuardian: qualifies,
   };
 }
 
@@ -62,14 +72,22 @@ export async function searchChildren(prisma: PrismaClient, query: string): Promi
   const children = [...startsWith, ...contains];
   if (children.length === 0) return [];
 
-  const lastVisits = await prisma.patient.groupBy({
-    by: ['childId'],
-    where: { childId: { in: children.map((c) => c.id) } },
-    _max: { examDate: true },
-  });
+  const childIds = children.map((c) => c.id);
+  const [lastVisits, guardians] = await Promise.all([
+    prisma.patient.groupBy({ by: ['childId'], where: { childId: { in: childIds } }, _max: { examDate: true } }),
+    prisma.guardian.findMany({ where: { childId: { in: childIds } } }),
+  ]);
   const lastVisitByChildId = new Map(lastVisits.map((v) => [v.childId, v._max.examDate]));
+  const guardiansByChildId = new Map<string, typeof guardians>();
+  for (const g of guardians) {
+    if (!guardiansByChildId.has(g.childId)) guardiansByChildId.set(g.childId, []);
+    guardiansByChildId.get(g.childId)!.push(g);
+  }
 
-  return children.map((c) => toChildRecord(c, lastVisitByChildId.get(c.id) ?? null));
+  return children.map((c) => {
+    const qualifies = (guardiansByChildId.get(c.id) ?? []).some((g) => !!g.email && !!g.phone);
+    return toChildRecord(c, lastVisitByChildId.get(c.id) ?? null, qualifies);
+  });
 }
 
 export interface ChildHistoryVisit {
@@ -83,6 +101,7 @@ export interface ChildHistoryVisit {
 
 export interface ChildHistory {
   child: ChildRecord;
+  guardians: GuardianRecord[];
   visits: ChildHistoryVisit[];
   /** Keyed by visit id — plain object, not a Map, so it survives JSON.stringify over HTTP. */
   alerts: Record<string, GrowthAlert[]>;
@@ -92,7 +111,10 @@ export async function getChildHistory(prisma: PrismaClient, childId: string): Pr
   const child = await prisma.child.findUnique({ where: { id: childId } });
   if (!child) return null;
 
-  const patients = await prisma.patient.findMany({ where: { childId }, orderBy: { examDate: 'asc' } });
+  const [patients, guardians] = await Promise.all([
+    prisma.patient.findMany({ where: { childId }, orderBy: { examDate: 'asc' } }),
+    getGuardiansForChild(prisma, childId),
+  ]);
 
   const visits: ChildHistoryVisit[] = patients.map((p) => {
     const fullResult = p.fullResult as unknown as AssessmentResult;
@@ -111,5 +133,5 @@ export async function getChildHistory(prisma: PrismaClient, childId: string): Pr
 
   const lastExamDate = visits.length > 0 ? new Date(visits[visits.length - 1].examDate) : null;
 
-  return { child: toChildRecord(child, lastExamDate), visits, alerts };
+  return { child: toChildRecord(child, lastExamDate, hasQualifyingGuardian(guardians)), guardians, visits, alerts };
 }

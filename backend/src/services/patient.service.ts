@@ -2,6 +2,7 @@ import type { PrismaClient } from '@prisma/client';
 import type { AssessmentInput, AssessmentResult } from '@dinhduong/shared';
 import { runAssessment } from './assessment.service';
 import { findOrCreateChild } from './child.service';
+import { getGuardiansForChild, hasQualifyingGuardian, upsertGuardian } from './guardian.service';
 
 export class PatientServiceError extends Error {
   constructor(
@@ -33,9 +34,27 @@ async function resolveChildId(prisma: PrismaClient, input: AssessmentInput): Pro
   return child.id;
 }
 
+/**
+ * Applies InputTab's quick "representative guardian" entry if provided, then
+ * enforces the real rule: the child must end up with at least one guardian
+ * (Bố or Mẹ) who has both email and phone. This naturally covers both cases —
+ * a brand-new child relies entirely on this visit's input, while an existing
+ * child that already qualifies doesn't need representativeGuardian resent.
+ */
+async function ensureQualifyingGuardian(prisma: PrismaClient, childId: string, input: AssessmentInput): Promise<void> {
+  if (input.representativeGuardian) {
+    await upsertGuardian(prisma, childId, input.representativeGuardian);
+  }
+  const guardians = await getGuardiansForChild(prisma, childId);
+  if (!hasQualifyingGuardian(guardians)) {
+    throw new PatientServiceError('Cần có ít nhất 1 người đại diện (Bố hoặc Mẹ) với đầy đủ họ tên, email và số điện thoại', 400);
+  }
+}
+
 export async function createPatient(prisma: PrismaClient, input: AssessmentInput) {
   const result = runAssessment(input);
   const childId = await resolveChildId(prisma, input);
+  await ensureQualifyingGuardian(prisma, childId, input);
 
   return prisma.patient.create({
     data: {
@@ -48,7 +67,6 @@ export async function createPatient(prisma: PrismaClient, input: AssessmentInput
       height: result.height,
       muac: result.muac,
       revisit: result.revisit ? new Date(result.revisit) : null,
-      guardianEmail: result.guardianEmail ?? null,
       tuvan: result.tuvan,
       labCa: input.labs.ca ?? null,
       labVitD: input.labs.vitD ?? null,
@@ -76,14 +94,24 @@ export async function createPatient(prisma: PrismaClient, input: AssessmentInput
 }
 
 export async function listPatients(prisma: PrismaClient) {
-  const patients = await prisma.patient.findMany({ orderBy: { createdAt: 'asc' } });
+  const patients = await prisma.patient.findMany({ orderBy: { createdAt: 'asc' }, include: { child: { include: { guardians: true } } } });
   // "stt" (display order number) is computed here, not stored — see plan notes on
   // why the legacy sequential-number bug (never renumbered after delete) isn't ported.
-  return patients.map((p, index) => ({ ...p, stt: index + 1 }));
+  // hasQualifyingGuardian is read-only here, denormalized from the joined
+  // Child's Guardian rows purely so LogTab can show a "Liên hệ" column
+  // without an extra round-trip per row — Guardian stays the source of truth.
+  return patients.map(({ child, ...p }, index) => ({
+    ...p,
+    stt: index + 1,
+    hasQualifyingGuardian: child.guardians.some((g) => !!g.email && !!g.phone),
+  }));
 }
 
 export async function getPatient(prisma: PrismaClient, id: string) {
-  return prisma.patient.findUnique({ where: { id } });
+  const patient = await prisma.patient.findUnique({ where: { id }, include: { child: { include: { guardians: true } } } });
+  if (!patient) return null;
+  const { child, ...p } = patient;
+  return { ...p, hasQualifyingGuardian: child.guardians.some((g) => !!g.email && !!g.phone) };
 }
 
 export async function deletePatient(prisma: PrismaClient, id: string): Promise<boolean> {

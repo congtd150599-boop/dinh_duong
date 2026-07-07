@@ -107,6 +107,5 @@ export function runAssessment(input: AssessmentInput): AssessmentResult {
     statusKey,
     tuvan: input.tuvan,
     revisit: input.revisit ?? null,
-    guardianEmail: input.guardianEmail ?? null,
   };
 }

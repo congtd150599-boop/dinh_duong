@@ -55,11 +55,12 @@ function buildAlertsByVisitId(patients: PatientRecord[]): Map<string, GrowthAler
 export function LogTab() {
   const { data: patients, isLoading } = usePatients();
   const deletePatient = useDeletePatient();
-  const { setActiveTab, setCurrentResult } = useAppState();
+  const { setActiveTab, setCurrentResult, setCurrentPatientId } = useAppState();
   const { user } = useAuth();
   const { showToast } = useToast();
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
+  const [autoEditContact, setAutoEditContact] = useState(false);
 
   const filtered = useMemo(() => (patients ?? []).filter((p) => matchesFilters(p, filters)), [patients, filters]);
   const alertsByVisitId = useMemo(() => buildAlertsByVisitId(patients ?? []), [patients]);
@@ -88,13 +89,28 @@ export function LogTab() {
     });
   }
 
-  function handleView(fullResult: AssessmentResult) {
+  function handleView(fullResult: AssessmentResult, patientId: string) {
     setCurrentResult(fullResult);
+    setCurrentPatientId(patientId);
     setActiveTab('result');
   }
 
+  function handleOpenContact(childId: string) {
+    setAutoEditContact(true);
+    setSelectedChildId(childId);
+  }
+
   if (selectedChildId) {
-    return <ChildHistoryPanel childId={selectedChildId} onBack={() => setSelectedChildId(null)} />;
+    return (
+      <ChildHistoryPanel
+        childId={selectedChildId}
+        autoEditContact={autoEditContact}
+        onBack={() => {
+          setSelectedChildId(null);
+          setAutoEditContact(false);
+        }}
+      />
+    );
   }
 
   return (
@@ -189,19 +205,20 @@ export function LogTab() {
                 <th>NL cá nhân</th>
                 <th>Đánh giá vi chất</th>
                 <th>Ngày TK</th>
+                <th>Liên hệ</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={14} style={{ textAlign: 'center', padding: 24 }}>
+                  <td colSpan={15} style={{ textAlign: 'center', padding: 24 }}>
                     Đang tải...
                   </td>
                 </tr>
               ) : !patients || patients.length === 0 ? (
                 <tr>
-                  <td colSpan={14}>
+                  <td colSpan={15}>
                     <div className="log-empty">
                       <div className="icon">📭</div>
                       <p>
@@ -214,7 +231,7 @@ export function LogTab() {
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={14} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>
+                  <td colSpan={15} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>
                     Không tìm thấy hồ sơ nào khớp bộ lọc.
                   </td>
                 </tr>
@@ -229,7 +246,7 @@ export function LogTab() {
                       <tr key={p.id}>
                         <td>{p.stt}</td>
                         <td>{p.examDate.slice(0, 10)}</td>
-                        <td style={{ fontWeight: 600, cursor: 'pointer' }} onClick={() => handleView(p.fullResult)}>
+                        <td style={{ fontWeight: 600, cursor: 'pointer' }} onClick={() => handleView(p.fullResult, p.id)}>
                           {p.name}
                           {alerts && alerts.length > 0 && (
                             <span title={alerts.map((a) => a.message).join(' · ')} style={{ marginLeft: 6 }}>
@@ -249,6 +266,26 @@ export function LogTab() {
                         <td>{p.targetEnergy} kcal</td>
                         <td style={{ fontSize: 11, maxWidth: 200 }}>{p.labAssessmentSummary}</td>
                         <td>{p.revisit ? p.revisit.slice(0, 10) : '—'}</td>
+                        <td>
+                          {p.hasQualifyingGuardian ? (
+                            <button
+                              className="btn-secondary"
+                              style={{ fontSize: 11, padding: '4px 8px' }}
+                              title="Đã có người đại diện đủ điều kiện liên hệ (email + SĐT)"
+                              onClick={() => handleOpenContact(p.childId)}
+                            >
+                              📧📱
+                            </button>
+                          ) : (
+                            <button
+                              className="btn-secondary"
+                              style={{ fontSize: 11, padding: '4px 8px', color: 'var(--warning)' }}
+                              onClick={() => handleOpenContact(p.childId)}
+                            >
+                              ⚠️ Chưa có
+                            </button>
+                          )}
+                        </td>
                         <td>
                           <div style={{ display: 'flex', gap: 6 }}>
                             <button className="btn-secondary" onClick={() => setSelectedChildId(p.childId)}>

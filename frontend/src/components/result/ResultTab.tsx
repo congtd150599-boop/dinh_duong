@@ -4,6 +4,7 @@ import { useCreatePatient } from '../../hooks/usePatients';
 import { useToast } from '../shared/ToastContext';
 import { StatusBadge } from '../shared/Badge';
 import { InfoBox } from '../shared/InfoBox';
+import { EmailReportButton } from '../../pdf/EmailReportButton';
 import { PdfExportButton } from '../../pdf/PdfExportButton';
 import { LabAssessmentPanel } from './LabAssessmentPanel';
 import { WeeklyMenuTable } from './WeeklyMenuTable';
@@ -16,7 +17,7 @@ function ageLabelFor(months: number): string {
 }
 
 export function ResultTab() {
-  const { currentResult: r } = useAppState();
+  const { currentResult: r, currentPatientId, setCurrentPatientId, currentAssessmentInput, setCurrentResult } = useAppState();
   const { showToast } = useToast();
   const createPatient = useCreatePatient();
 
@@ -34,24 +35,28 @@ export function ResultTab() {
 
   function handleSave() {
     if (!r) return;
-    createPatient.mutate(
-      {
-        name: r.name,
-        dob: r.dob,
-        examDate: r.examDate,
-        weight: r.weight,
-        height: r.height,
-        muac: r.muac,
-        gender: r.gender,
-        tuvan: r.tuvan,
-        revisit: r.revisit,
-        labs: {}, // raw lab inputs aren't retained on the client after calculation; re-enter to include labs
+    // Prefer the exact payload InputTab built (carries childId/representativeGuardian) — reconstructing
+    // from just `r` loses those and can wrongly 400 for a brand-new child with no guardian on file yet.
+    const payload = currentAssessmentInput ?? {
+      name: r.name,
+      dob: r.dob,
+      examDate: r.examDate,
+      weight: r.weight,
+      height: r.height,
+      muac: r.muac,
+      gender: r.gender,
+      tuvan: r.tuvan,
+      revisit: r.revisit,
+      labs: {}, // raw lab inputs aren't retained on the client after calculation; re-enter to include labs
+    };
+    createPatient.mutate(payload, {
+      onSuccess: (patient) => {
+        setCurrentResult(patient.fullResult);
+        setCurrentPatientId(patient.id);
+        showToast(`✅ Đã lưu hồ sơ bệnh nhân "${r.name}" vào nhật ký!`, 'success');
       },
-      {
-        onSuccess: () => showToast(`✅ Đã lưu hồ sơ bệnh nhân "${r.name}" vào nhật ký!`, 'success'),
-        onError: () => showToast('Lỗi khi lưu hồ sơ. Vui lòng thử lại.', 'error'),
-      },
-    );
+      onError: () => showToast('Lỗi khi lưu hồ sơ. Vui lòng thử lại.', 'error'),
+    });
   }
 
   const carbKcal = Math.round(r.targetEnergy * 0.55);
@@ -360,6 +365,7 @@ export function ResultTab() {
           🖨️ In báo cáo
         </button>
         <PdfExportButton result={r} />
+        <EmailReportButton result={r} patientId={currentPatientId} />
         <button className="btn-primary" style={{ width: 'auto', padding: '10px 24px' }} onClick={handleSave} disabled={createPatient.isPending}>
           💾 {createPatient.isPending ? 'Đang lưu...' : 'Lưu hồ sơ'}
         </button>

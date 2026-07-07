@@ -12,6 +12,8 @@ declare module 'html2pdf.js' {
     set(opt: Html2PdfOptions): Html2PdfInstance;
     from(element: HTMLElement): Html2PdfInstance;
     save(): Promise<void>;
+    /** Resolves the rendered PDF as a Blob instead of triggering a download — used to email the report. */
+    outputPdf(type: 'blob'): Promise<Blob>;
   }
 
   function html2pdf(): Html2PdfInstance;

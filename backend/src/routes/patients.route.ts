@@ -1,9 +1,12 @@
 import type { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
 import { requireRole } from '../middleware/require-auth.middleware';
+import { GuardianServiceError } from '../services/guardian.service';
 import { createPatient, deletePatient, exportPatientsCsv, getPatient, listPatients, PatientServiceError } from '../services/patient.service';
+import { ReportServiceError, sendPatientReportEmail } from '../services/report.service';
 import { asyncHandler } from '../utils/async-handler';
 import { assessmentInputSchema } from '../validation/assessment-input.schema';
+import { sendReportSchema } from '../validation/report.schema';
 
 export function buildPatientsRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -20,7 +23,7 @@ export function buildPatientsRouter(prisma: PrismaClient): Router {
         const patient = await createPatient(prisma, parsed.data);
         res.status(201).json(patient);
       } catch (err) {
-        if (err instanceof PatientServiceError) {
+        if (err instanceof PatientServiceError || err instanceof GuardianServiceError) {
           res.status(err.status).json({ error: err.message });
           return;
         }
@@ -60,6 +63,30 @@ export function buildPatientsRouter(prisma: PrismaClient): Router {
         return;
       }
       res.json(patient);
+    }),
+  );
+
+  // No requireRole — any authenticated staff can (re)send a report, same as
+  // creating a patient or editing guardian contact info being open to all roles.
+  router.post(
+    '/:id/send-report',
+    asyncHandler(async (req, res) => {
+      const parsed = sendReportSchema.safeParse(req.body);
+      if (!parsed.success) {
+        res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
+        return;
+      }
+      try {
+        const pdfBuffer = Buffer.from(parsed.data.pdfBase64, 'base64');
+        const result = await sendPatientReportEmail(prisma, req.params.id, pdfBuffer);
+        res.json(result);
+      } catch (err) {
+        if (err instanceof ReportServiceError) {
+          res.status(err.status).json({ error: err.message });
+          return;
+        }
+        throw err;
+      }
     }),
   );
 
