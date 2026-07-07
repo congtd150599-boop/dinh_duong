@@ -79,6 +79,40 @@ describe('POST /api/patients + GET /api/patients', () => {
     const listRes = await agent.get('/api/patients');
     expect(listRes.body).toHaveLength(0);
   });
+
+  it('no childId, brand-new name/dob → auto-creates a Child, returned in the response', async () => {
+    const res = await agent.post('/api/patients').send(validInput);
+    expect(res.status).toBe(201);
+    expect(res.body.childId).toBeDefined();
+  });
+
+  it('same name (different casing/whitespace) + same dob, no childId → reuses the same Child', async () => {
+    const first = await agent.post('/api/patients').send(validInput);
+    const second = await agent.post('/api/patients').send({
+      ...validInput,
+      name: '  nguyễn   văn a  ',
+      examDate: '2026-06-01',
+    });
+    expect(second.status).toBe(201);
+    expect(second.body.childId).toBe(first.body.childId);
+  });
+
+  it('explicit childId from a prior visit, different typed name → attaches to the given childId', async () => {
+    const first = await agent.post('/api/patients').send(validInput);
+    const second = await agent.post('/api/patients').send({
+      ...validInput,
+      name: 'Tên Gõ Khác Hẳn',
+      examDate: '2026-06-01',
+      childId: first.body.childId,
+    });
+    expect(second.status).toBe(201);
+    expect(second.body.childId).toBe(first.body.childId);
+  });
+
+  it('childId that does not exist → 400, not a 500/FK crash', async () => {
+    const res = await agent.post('/api/patients').send({ ...validInput, childId: 'clnonexistentid00000000000' });
+    expect(res.status).toBe(400);
+  });
 });
 
 describe('GET/DELETE /api/patients/:id', () => {

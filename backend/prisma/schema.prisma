@@ -25,6 +25,14 @@ model Patient {
   guardianEmail          String? // optional — reminder emails just don't get sent for a patient without one
   revisitReminderSentAt  DateTime? // set once the reminder email succeeds, so the daily scan never double-sends
 
+  // Links this visit to the child's persistent record (see Child) so multiple
+  // visits for the same kid can be grouped for trend charts/growth alerts.
+  // name/dob/gender above stay as an immutable per-visit snapshot — they are
+  // NOT re-derived from Child, so a later correction to Child's name/dob does
+  // not rewrite history (see plan notes on this being accepted, documented debt).
+  childId String
+  child   Child  @relation(fields: [childId], references: [id])
+
   // raw optional lab inputs
   labCa        Float?
   labVitD      Float?
@@ -53,6 +61,23 @@ model Patient {
   fullResult Json
 
   @@index([examDate])
+  @@index([name])
+  @@index([childId])
+}
+
+// A child's persistent identity, spanning every visit they've ever had (see
+// Patient.childId). Looked up/selected by the doctor in the input form (or
+// auto-created via child.service.ts's findOrCreateChild when no existing
+// record was picked) — this is what lets the app group visits for trend
+// charts and growth-faltering alerts instead of just guessing by name+dob.
+model Child {
+  id        String    @id @default(cuid())
+  createdAt DateTime  @default(now())
+  name      String
+  dob       DateTime
+  gender    String // 'Nam' | 'Nữ'
+  patients  Patient[]
+
   @@index([name])
 }
 
@@ -84,4 +109,26 @@ model GrowthStandardPoint {
   importedAt DateTime @default(now())
 
   @@unique([gender, metric, months])
+}
+
+// Doctor-editable food reference list: nutrition figures, benefits, and
+// disease-contraindication tags. A subset of ~20 rows (isSystemDefault) also
+// back menu.service.ts's dish-keyword nutrition lookup (see food.service.ts),
+// so editing one changes the generated weekly menu — those rows can be
+// edited but not deleted through the UI/API.
+model Food {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  name            String   @unique
+  category        String // one of FOOD_CATEGORIES (@dinhduong/shared) — validated via zod at the API boundary
+  kcalPer100      Float
+  proteinPer100   Float    @default(0)
+  carbPer100      Float    @default(0)
+  fatPer100       Float    @default(0)
+  benefits        String?
+  cautionNote     String?
+  conditionTags   String[] // subset of FOOD_CONDITION_TAGS (@dinhduong/shared)
+  source          String?
+  isSystemDefault Boolean  @default(false)
 }

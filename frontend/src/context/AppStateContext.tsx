@@ -1,7 +1,7 @@
 import type { AssessmentResult } from '@dinhduong/shared';
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
-export type TabName = 'input' | 'result' | 'log' | 'growthStandards' | 'users';
+export type TabName = 'input' | 'result' | 'log' | 'growthStandards' | 'foods' | 'users';
 
 interface AppStateContextValue {
   activeTab: TabName;

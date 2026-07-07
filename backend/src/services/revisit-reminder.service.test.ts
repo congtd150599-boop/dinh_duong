@@ -32,6 +32,7 @@ const basePatient = {
   dob: new Date('2024-01-01'),
   examDate: new Date('2026-07-01'),
   gender: 'Nam',
+  child: { create: { name: 'Test Patient', dob: new Date('2024-01-01'), gender: 'Nam' } },
   weight: 10,
   height: 80,
   tuvan: 'Có',

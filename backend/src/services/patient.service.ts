@@ -1,17 +1,45 @@
 import type { PrismaClient } from '@prisma/client';
 import type { AssessmentInput, AssessmentResult } from '@dinhduong/shared';
 import { runAssessment } from './assessment.service';
+import { findOrCreateChild } from './child.service';
+
+export class PatientServiceError extends Error {
+  constructor(
+    message: string,
+    public status: number = 400,
+  ) {
+    super(message);
+  }
+}
 
 function labSummary(labs: AssessmentResult['labs']): string {
   const abnormal = labs.filter((l) => l.status !== 'ok').map((l) => l.diagnosis);
   return abnormal.length > 0 ? abnormal.join(', ') : 'Bình thường';
 }
 
+/**
+ * Resolves the visit's childId: an explicit selection from InputTab's search
+ * box takes precedence (validated to actually exist) so a doctor picking an
+ * existing record always wins even if they retyped the name slightly
+ * differently; otherwise falls back to findOrCreateChild's name+dob match.
+ */
+async function resolveChildId(prisma: PrismaClient, input: AssessmentInput): Promise<string> {
+  if (input.childId) {
+    const child = await prisma.child.findUnique({ where: { id: input.childId } });
+    if (!child) throw new PatientServiceError('childId không tồn tại', 400);
+    return child.id;
+  }
+  const child = await findOrCreateChild(prisma, { name: input.name, dob: input.dob, gender: input.gender });
+  return child.id;
+}
+
 export async function createPatient(prisma: PrismaClient, input: AssessmentInput) {
   const result = runAssessment(input);
+  const childId = await resolveChildId(prisma, input);
 
   return prisma.patient.create({
     data: {
+      childId,
       name: result.name,
       dob: new Date(result.dob),
       examDate: new Date(result.examDate),

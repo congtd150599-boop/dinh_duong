@@ -1,6 +1,6 @@
 import type { MealSlot, MenuDish, MenuIngredient, WeeklyMenu } from '@dinhduong/shared';
-import { getFoodComposition } from '../data/food-composition.data';
 import { MENU_DATA, type AgeKey, type MenuEntry } from '../data/menu.data';
+import { getFoodComposition } from './food.service';
 
 const MEAL_SLOTS: MealSlot[] = ['Sáng', 'Phụ sáng', 'Trưa', 'Phụ chiều', 'Tối', 'Phụ tối'];
 

@@ -52,6 +52,8 @@ export interface AssessmentInput {
   guardianEmail?: string | null;
   menuFilters?: MenuFilters;
   labs: LabInputs;
+  /** Set when the doctor picked an existing child from the search box in InputTab; omitted/null lets the backend find-or-create by name+dob. */
+  childId?: string | null;
 }
 
 export interface MenuIngredient {
@@ -114,6 +116,7 @@ export interface PatientRecord {
   id: string;
   createdAt: string;
   updatedAt: string;
+  childId: string;
   name: string;
   dob: string;
   examDate: string;
@@ -157,4 +160,63 @@ export interface UserRecord {
   email: string;
   role: Role;
   isActive: boolean;
+}
+
+export const FOOD_CATEGORIES = [
+  'Tinh bột',
+  'Đạm',
+  'Rau củ',
+  'Trái cây',
+  'Sữa & chế phẩm',
+  'Chất béo',
+  'Hạt & đậu',
+  'Khác',
+] as const;
+export type FoodCategory = (typeof FOOD_CATEGORIES)[number];
+
+/** Fixed vocabulary for per-food contraindication tags — a checkbox list, not free text, so menus can later be filtered by patient condition. */
+export const FOOD_CONDITION_TAGS = [
+  'Tiểu đường',
+  'Suy thận',
+  'Gout',
+  'Cao huyết áp',
+  'Rối loạn lipid máu',
+  'Suy dinh dưỡng',
+  'Thừa cân/Béo phì',
+  'Dị ứng đạm sữa bò',
+  'Dị ứng hải sản',
+  'Táo bón',
+  'Tiêu chảy',
+  'Trào ngược dạ dày',
+  'Thiếu máu thiếu sắt',
+] as const;
+export type FoodConditionTag = (typeof FOOD_CONDITION_TAGS)[number];
+
+/** Wire shape of a Food reference-data record as returned by the /api/foods endpoints. */
+export interface FoodRecord {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  name: string;
+  category: FoodCategory;
+  kcalPer100: number;
+  proteinPer100: number;
+  carbPer100: number;
+  fatPer100: number;
+  benefits: string | null;
+  cautionNote: string | null;
+  conditionTags: FoodConditionTag[];
+  source: string | null;
+  /** One of the ~20 core items menu.service.ts's dish-keyword matcher resolves to — cannot be deleted via the UI/API. */
+  isSystemDefault: boolean;
+}
+
+/** Wire shape of a Child (persistent per-kid record spanning multiple visits) as returned by /api/children/search. */
+export interface ChildRecord {
+  id: string;
+  name: string;
+  dob: string;
+  gender: Gender;
+  /** Most recent visit's examDate for this child, or null if somehow it has none — helps a doctor disambiguate same-name children in the search dropdown. */
+  lastExamDate: string | null;
 }

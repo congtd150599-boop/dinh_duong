@@ -36,6 +36,7 @@ export const assessmentInputSchema = z.object({
   guardianEmail: z.string().trim().email('Email không hợp lệ').nullable().optional(),
   menuFilters: menuFiltersSchema.optional(),
   labs: labInputsSchema.default({}),
+  childId: z.string().cuid().nullable().optional(),
 });
 
 export type AssessmentInputPayload = z.infer<typeof assessmentInputSchema>;

@@ -1,7 +1,10 @@
+import { useState } from 'react';
 import { LoginPage } from './components/auth/LoginPage';
-import { AppHeader } from './components/layout/AppHeader';
+import { FoodsTab } from './components/foods/FoodsTab';
 import { GrowthStandardsTab } from './components/growthStandards/GrowthStandardsTab';
 import { InputTab } from './components/input/InputTab';
+import { AppHeader } from './components/layout/AppHeader';
+import { Sidebar } from './components/layout/Sidebar';
 import { LogTab } from './components/log/LogTab';
 import { ResultTab } from './components/result/ResultTab';
 import { UsersTab } from './components/users/UsersTab';
@@ -11,6 +14,7 @@ import { useAuth } from './context/AuthContext';
 export default function App() {
   const { activeTab } = useAppState();
   const { user, isLoading } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -25,15 +29,19 @@ export default function App() {
   }
 
   return (
-    <>
-      <AppHeader />
-      <main className="main">
-        {activeTab === 'input' && <InputTab />}
-        {activeTab === 'result' && <ResultTab />}
-        {activeTab === 'log' && <LogTab />}
-        {activeTab === 'growthStandards' && <GrowthStandardsTab />}
-        {activeTab === 'users' && user.role === 'admin' && <UsersTab />}
-      </main>
-    </>
+    <div className="app-shell">
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="app-content">
+        <AppHeader onToggleSidebar={() => setSidebarOpen((open) => !open)} />
+        <main className="main">
+          {activeTab === 'input' && <InputTab />}
+          {activeTab === 'result' && <ResultTab />}
+          {activeTab === 'log' && <LogTab />}
+          {activeTab === 'growthStandards' && <GrowthStandardsTab />}
+          {activeTab === 'foods' && <FoodsTab />}
+          {activeTab === 'users' && user.role === 'admin' && <UsersTab />}
+        </main>
+      </div>
+    </div>
   );
 }

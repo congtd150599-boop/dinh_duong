@@ -1,8 +1,9 @@
-import type { AssessmentInput, Gender, MenuFilters, TuVan } from '@dinhduong/shared';
+import type { AssessmentInput, ChildRecord, Gender, MenuFilters, TuVan } from '@dinhduong/shared';
 import { useMemo, useState } from 'react';
 import { useAppState } from '../../context/AppStateContext';
 import { useToast } from '../shared/ToastContext';
 import { useCreatePatient } from '../../hooks/usePatients';
+import { useSearchChildren } from '../../hooks/useChildren';
 import { useDebouncedAssessment } from '../../hooks/useDebouncedAssessment';
 import { computeAgeDisplay } from '../../utils/age-display';
 import { Card } from '../shared/Card';
@@ -36,6 +37,8 @@ interface FormState {
   muac: string;
   labs: LabFormState;
   menuFilters: Required<MenuFilters>;
+  /** Set when the doctor picked an existing child from the search dropdown below "Họ và tên" — cleared as soon as name/dob is edited again, so a new visit never silently attaches to the wrong child. */
+  selectedChildId: string | null;
 }
 
 const today = new Date().toISOString().slice(0, 10);
@@ -63,6 +66,7 @@ const initialForm: FormState = {
   muac: '',
   labs: { ca: '', vitD: '', zn: '', hb: '', fe: '', ferritin: '', chol: '', tg: '' },
   menuFilters: initialMenuFilters,
+  selectedChildId: null,
 };
 
 const MENU_FILTER_OPTIONS: { key: keyof MenuFilters; label: string }[] = [
@@ -104,6 +108,7 @@ function buildAssessmentInput(form: FormState): AssessmentInput | null {
     revisit: form.revisit || null,
     guardianEmail: toNullableString(form.guardianEmail),
     menuFilters: form.menuFilters,
+    childId: form.selectedChildId,
     labs: {
       ca: toNullableNumber(form.labs.ca),
       vitD: toNullableNumber(form.labs.vitD),
@@ -119,9 +124,11 @@ function buildAssessmentInput(form: FormState): AssessmentInput | null {
 
 export function InputTab() {
   const [form, setForm] = useState<FormState>(initialForm);
+  const [nameFieldFocused, setNameFieldFocused] = useState(false);
   const { setActiveTab, setCurrentResult } = useAppState();
   const { showToast } = useToast();
   const createPatient = useCreatePatient();
+  const { results: childSuggestions } = useSearchChildren(form.selectedChildId ? '' : form.name);
 
   const assessmentInput = useMemo(() => buildAssessmentInput(form), [form]);
   const { result, isLoading } = useDebouncedAssessment(assessmentInput);
@@ -137,6 +144,20 @@ export function InputTab() {
   }
   function updateMenuFilter(key: keyof MenuFilters, value: boolean) {
     setForm((f) => ({ ...f, menuFilters: { ...f.menuFilters, [key]: value } }));
+  }
+
+  // Editing name/dob after a child was selected means the doctor no longer
+  // means that exact record — clear the lock so save falls back to
+  // find-or-create by name+dob instead of silently misattaching this visit.
+  function handleNameChange(value: string) {
+    setForm((f) => ({ ...f, name: value, selectedChildId: null }));
+  }
+  function handleDobChange(value: string) {
+    setForm((f) => ({ ...f, dob: value, selectedChildId: null }));
+  }
+  function handleSelectChild(child: ChildRecord) {
+    setForm((f) => ({ ...f, name: child.name, dob: child.dob.slice(0, 10), gender: child.gender, selectedChildId: child.id }));
+    setNameFieldFocused(false);
   }
 
   function handleViewResult() {
@@ -167,7 +188,7 @@ export function InputTab() {
       {/* LEFT: PATIENT INFO */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         <Card icon="👤" iconBg="#E8F5E9" title="A. Thông Tin Bệnh Nhân">
-          <div className="form-group">
+          <div className="form-group" style={{ position: 'relative' }}>
             <label className="form-label">
               Họ và tên<span className="required">*</span>
             </label>
@@ -176,15 +197,63 @@ export function InputTab() {
               className="form-control"
               placeholder="Nguyễn Văn A"
               value={form.name}
-              onChange={(e) => update('name', e.target.value)}
+              onChange={(e) => handleNameChange(e.target.value)}
+              onFocus={() => setNameFieldFocused(true)}
+              onBlur={() => setNameFieldFocused(false)}
             />
+            {form.selectedChildId ? (
+              <div className="form-hint" style={{ color: 'var(--success)' }}>
+                ✓ Đã chọn hồ sơ trẻ có sẵn — lần khám này sẽ được gộp vào lịch sử của trẻ này.{' '}
+                <button
+                  type="button"
+                  onClick={() => update('selectedChildId', null)}
+                  style={{ border: 'none', background: 'none', color: 'var(--primary)', textDecoration: 'underline', cursor: 'pointer', padding: 0 }}
+                >
+                  Bỏ chọn
+                </button>
+              </div>
+            ) : (
+              nameFieldFocused &&
+              childSuggestions.length > 0 && (
+                <div
+                  className="card"
+                  style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, marginTop: 4, maxHeight: 220, overflowY: 'auto' }}
+                >
+                  {childSuggestions.map((child) => (
+                    <button
+                      key={child.id}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => handleSelectChild(child)}
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '8px 12px',
+                        border: 'none',
+                        borderBottom: '1px solid var(--border)',
+                        background: 'var(--card)',
+                        cursor: 'pointer',
+                        fontSize: 13,
+                      }}
+                    >
+                      <strong>{child.name}</strong>{' '}
+                      <span style={{ color: 'var(--text-muted)' }}>
+                        · {child.gender} · sinh {child.dob.slice(0, 10)}
+                        {child.lastExamDate && ` · khám gần nhất ${child.lastExamDate.slice(0, 10)}`}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )
+            )}
           </div>
           <div className="grid-2">
             <div className="form-group">
               <label className="form-label">
                 Ngày sinh<span className="required">*</span>
               </label>
-              <input type="date" className="form-control" value={form.dob} onChange={(e) => update('dob', e.target.value)} />
+              <input type="date" className="form-control" value={form.dob} onChange={(e) => handleDobChange(e.target.value)} />
             </div>
             <div className="form-group">
               <label className="form-label">

@@ -1,7 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
 import { requireRole } from '../middleware/require-auth.middleware';
-import { createPatient, deletePatient, exportPatientsCsv, getPatient, listPatients } from '../services/patient.service';
+import { createPatient, deletePatient, exportPatientsCsv, getPatient, listPatients, PatientServiceError } from '../services/patient.service';
 import { asyncHandler } from '../utils/async-handler';
 import { assessmentInputSchema } from '../validation/assessment-input.schema';
 
@@ -16,8 +16,16 @@ export function buildPatientsRouter(prisma: PrismaClient): Router {
         res.status(400).json({ error: 'Invalid input', details: parsed.error.flatten() });
         return;
       }
-      const patient = await createPatient(prisma, parsed.data);
-      res.status(201).json(patient);
+      try {
+        const patient = await createPatient(prisma, parsed.data);
+        res.status(201).json(patient);
+      } catch (err) {
+        if (err instanceof PatientServiceError) {
+          res.status(err.status).json({ error: err.message });
+          return;
+        }
+        throw err;
+      }
     }),
   );
 

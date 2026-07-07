@@ -1,4 +1,4 @@
-import type { AssessmentInput, AssessmentResult } from '@dinhduong/shared';
+import { monthsBetween, type AssessmentInput, type AssessmentResult } from '@dinhduong/shared';
 import type { AgeKey } from '../data/menu.data';
 import { calcEnergy, calcMacros } from './energy.service';
 import { assessLabs } from './lab-assessment.service';
@@ -7,18 +7,6 @@ import { buildMenuWithQuantities, getBaseMenu } from './menu.service';
 import { getHfaLms, getHfaMedian, getWfaLms, getWfaMedian } from './growth-standards.service';
 import { getWfhLms } from './wfh-lms.service';
 import { computeZScores } from './z-score.service';
-
-function monthsBetween(dob: string, examDate: string): number {
-  const d1 = new Date(dob);
-  const d2 = new Date(examDate);
-  let years = d2.getFullYear() - d1.getFullYear();
-  let months = d2.getMonth() - d1.getMonth();
-  if (months < 0) {
-    years -= 1;
-    months += 12;
-  }
-  return years * 12 + months;
-}
 
 function getAgeKey(months: number): AgeKey {
   if (months < 12) return '6-12m';

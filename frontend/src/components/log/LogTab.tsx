@@ -1,10 +1,11 @@
-import type { AssessmentResult, Gender, PatientRecord } from '@dinhduong/shared';
+import { computeGrowthAlerts, type AssessmentResult, type Gender, type GrowthAlert, type PatientRecord, type VisitPoint } from '@dinhduong/shared';
 import { useMemo, useState } from 'react';
 import { csvExportUrl } from '../../api/client';
 import { useAppState } from '../../context/AppStateContext';
 import { useAuth } from '../../context/AuthContext';
 import { useDeletePatient, usePatients } from '../../hooks/usePatients';
 import { useToast } from '../shared/ToastContext';
+import { ChildHistoryPanel } from './ChildHistoryPanel';
 
 const WFH_OPTIONS = ['SDD cấp nặng', 'Suy dinh dưỡng cấp', 'Bình thường', 'Thừa cân', 'Béo phì'];
 const SDD_STATUSES = new Set(['SDD cấp nặng', 'Suy dinh dưỡng cấp']);
@@ -30,6 +31,27 @@ function matchesFilters(p: PatientRecord, f: Filters): boolean {
   return true;
 }
 
+/** Groups patients by childId and runs computeGrowthAlerts per group — reuses data usePatients() already loaded, no extra fetch. */
+function buildAlertsByVisitId(patients: PatientRecord[]): Map<string, GrowthAlert[]> {
+  const byChild = new Map<string, PatientRecord[]>();
+  for (const p of patients) {
+    if (!byChild.has(p.childId)) byChild.set(p.childId, []);
+    byChild.get(p.childId)!.push(p);
+  }
+  const merged = new Map<string, GrowthAlert[]>();
+  for (const visits of byChild.values()) {
+    const points: VisitPoint[] = visits.map((p) => ({
+      id: p.id,
+      examDate: p.examDate,
+      weight: p.weight,
+      height: p.height,
+      wfaZ: p.fullResult.wfaZ,
+    }));
+    for (const [visitId, alerts] of computeGrowthAlerts(points)) merged.set(visitId, alerts);
+  }
+  return merged;
+}
+
 export function LogTab() {
   const { data: patients, isLoading } = usePatients();
   const deletePatient = useDeletePatient();
@@ -37,8 +59,10 @@ export function LogTab() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [filters, setFilters] = useState<Filters>(emptyFilters);
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
 
   const filtered = useMemo(() => (patients ?? []).filter((p) => matchesFilters(p, filters)), [patients, filters]);
+  const alertsByVisitId = useMemo(() => buildAlertsByVisitId(patients ?? []), [patients]);
 
   const stats = useMemo(() => {
     const total = filtered.length;
@@ -67,6 +91,10 @@ export function LogTab() {
   function handleView(fullResult: AssessmentResult) {
     setCurrentResult(fullResult);
     setActiveTab('result');
+  }
+
+  if (selectedChildId) {
+    return <ChildHistoryPanel childId={selectedChildId} onBack={() => setSelectedChildId(null)} />;
   }
 
   return (
@@ -196,12 +224,18 @@ export function LogTab() {
                   .reverse()
                   .map((p) => {
                     const statusColor = p.wfh.includes('nặng') ? '#C62828' : p.wfh === 'Bình thường' ? '#2E7D32' : '#F57F17';
+                    const alerts = alertsByVisitId.get(p.id);
                     return (
                       <tr key={p.id}>
                         <td>{p.stt}</td>
                         <td>{p.examDate.slice(0, 10)}</td>
                         <td style={{ fontWeight: 600, cursor: 'pointer' }} onClick={() => handleView(p.fullResult)}>
                           {p.name}
+                          {alerts && alerts.length > 0 && (
+                            <span title={alerts.map((a) => a.message).join(' · ')} style={{ marginLeft: 6 }}>
+                              🚩
+                            </span>
+                          )}
                         </td>
                         <td>{p.months}T</td>
                         <td>{p.gender}</td>
@@ -216,11 +250,16 @@ export function LogTab() {
                         <td style={{ fontSize: 11, maxWidth: 200 }}>{p.labAssessmentSummary}</td>
                         <td>{p.revisit ? p.revisit.slice(0, 10) : '—'}</td>
                         <td>
-                          {canDelete && (
-                            <button className="btn-danger" onClick={() => handleDelete(p.id, p.name)}>
-                              🗑️
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button className="btn-secondary" onClick={() => setSelectedChildId(p.childId)}>
+                              📈 Lịch sử
                             </button>
-                          )}
+                            {canDelete && (
+                              <button className="btn-danger" onClick={() => handleDelete(p.id, p.name)}>
+                                🗑️
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );

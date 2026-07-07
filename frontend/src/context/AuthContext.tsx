@@ -41,11 +41,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await apiLogout();
-    // Clear everything, not just ['me'] — patient/growth-standards queries are
+    // Set ['me'] first so the redirect to LoginPage is immediate and never
+    // races with clearing the cache — calling queryClient.clear() before this
+    // removed the ['me'] entry the active useQuery above is subscribed to,
+    // which could re-trigger its own fetch and momentarily fight with the
+    // null we were about to set, so the UI only updated on the next full
+    // reload instead of right away.
+    queryClient.setQueryData(['me'], null);
+    // Then drop everything else — patient/growth-standards/foods queries are
     // cached per-browser-tab, not per-user, so a different account logging in
     // next in the same tab must not see the previous user's cached data.
-    queryClient.clear();
-    queryClient.setQueryData(['me'], null);
+    queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== 'me' });
   }, [queryClient]);
 
   return <AuthContext.Provider value={{ user: data ?? null, isLoading, login, logout }}>{children}</AuthContext.Provider>;
