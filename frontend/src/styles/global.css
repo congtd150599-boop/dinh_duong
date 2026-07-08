@@ -5,6 +5,10 @@ body {
   background: var(--surface);
   color: var(--text-primary);
   min-height: 100vh;
+  /* Safety net against whole-page horizontal scroll from any stray
+     fixed-width element on narrow screens — .sidebar's position:sticky still
+     works fine since body remains the scrolling ancestor for the Y axis. */
+  overflow-x: hidden;
 }
 
 /* APP SHELL — sidebar (nav) + content column (header/main) */
@@ -155,6 +159,12 @@ body {
 .grid-list-form { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+/* Same column counts as .grid-2/.grid-3 but gap is left to the caller's inline
+   style — used for compact stat-tile rows (e.g. macro g/kcal breakdowns)
+   nested inside a card that's already been narrowed by an outer grid, so they
+   need their own phone-breakpoint collapse independent of the outer grid. */
+.stat-grid-2 { display: grid; grid-template-columns: 1fr 1fr; }
+.stat-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; }
 
 /* CARDS */
 .card {
@@ -574,6 +584,8 @@ body {
   .grid-4 { grid-template-columns: 1fr 1fr; }
   .grid-list-form { grid-template-columns: 1fr; }
 
+  .main { padding: 16px; }
+
   .header-inner { padding: 12px 16px; }
   .header-logo { width: 40px; height: 40px; font-size: 20px; }
   .header-title p { display: none; }
@@ -607,6 +619,41 @@ body {
     z-index: 150;
   }
   .sidebar-toggle { display: flex; align-items: center; justify-content: center; }
+}
+
+/* PHONE — the 900px breakpoint above targets tablet (still 2-column for
+   grid-3/grid-4, which is fine around 600-900px); real phones (~360-480px)
+   need everything stacked to a single column and tighter spacing, or content
+   (long Vietnamese labels, multi-digit values) gets crushed into ~150px-wide
+   columns and wraps/clips badly. */
+@media (max-width: 480px) {
+  .grid-3, .grid-4, .stat-grid-2, .stat-grid-3 { grid-template-columns: 1fr; }
+
+  .main { padding: 12px; }
+  .card-body { padding: 14px; }
+  .card-header { padding: 12px 14px; flex-wrap: wrap; }
+  /* A card-header "extra" slot (search box, action button) sized for sitting
+     next to a title on one line — at this width the title alone can fill the
+     row, so the extra slot wraps to its own line via flex-wrap above; drop
+     its fixed maxWidth so it isn't stranded at a cramped 240px on a ~360px
+     screen. */
+  .card-header-search { max-width: none !important; width: 100%; margin-left: 0 !important; }
+
+  .header-inner { gap: 10px; }
+  .header-logo { width: 34px; height: 34px; font-size: 17px; }
+  .header-title h1 { font-size: 13px; }
+
+  /* Filter/search rows built with flex-wrap + fixed minWidth (LogTab,
+     FoodsTab) — the min-width floors stop them from ever reaching a single
+     narrow column, so every field ends up on its own row anyway; this just
+     drops the floor so that's a clean 1-per-row stack instead of an awkward
+     2nd field clipped half off-screen. */
+  .form-group { min-width: 0 !important; }
+
+  .result-hero-stats { gap: 16px; }
+  .hero-stat .val { font-size: 22px; }
+
+  .btn-secondary { padding: 8px 14px; font-size: 12px; }
 }
 
 /* ANIMATIONS */

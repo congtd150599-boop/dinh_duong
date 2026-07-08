@@ -163,6 +163,9 @@ export interface PatientRecord {
   updatedAt: string;
   childId: string;
   hasQualifyingGuardian: boolean;
+  /** Which staff account recorded this visit — attribution/filtering only ("Khám bởi"), never a visibility restriction. Null for visits recorded before this field existed. */
+  examinedByUserId: string | null;
+  examinedByName: string | null;
   name: string;
   dob: string;
   examDate: string;

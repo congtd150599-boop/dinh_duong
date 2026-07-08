@@ -98,6 +98,8 @@ export interface ChildHistoryVisit {
   height: number;
   bmi: number;
   wfaZ: number | null;
+  /** Which staff account recorded this visit ("Khám bởi") — display-only, every visit stays visible regardless of examiner. Null if unknown (pre-dates this field) or the account was removed. */
+  examinedByName: string | null;
 }
 
 export interface ChildHistory {
@@ -115,7 +117,7 @@ export async function getChildHistory(prisma: PrismaClient, childId: string): Pr
   if (!child) return null;
 
   const [patients, guardians, reportLogRows] = await Promise.all([
-    prisma.patient.findMany({ where: { childId }, orderBy: { examDate: 'asc' } }),
+    prisma.patient.findMany({ where: { childId }, orderBy: { examDate: 'asc' }, include: { examinedBy: { select: { name: true } } } }),
     getGuardiansForChild(prisma, childId),
     prisma.reportEmailLog.findMany({
       where: { childId },
@@ -144,6 +146,7 @@ export async function getChildHistory(prisma: PrismaClient, childId: string): Pr
       height: p.height,
       bmi: p.bmi,
       wfaZ: fullResult.wfaZ,
+      examinedByName: p.examinedBy?.name ?? null,
     };
   });
 

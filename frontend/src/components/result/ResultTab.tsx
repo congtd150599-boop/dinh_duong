@@ -111,6 +111,7 @@ export function ResultTab() {
             <h3>Đánh Giá Tình Trạng Dinh Dưỡng</h3>
           </div>
           <div className="card-body">
+            <div style={{ overflowX: 'auto' }}>
             <table className="data-table">
               <thead>
                 <tr>
@@ -166,6 +167,7 @@ export function ResultTab() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
 
@@ -178,7 +180,7 @@ export function ResultTab() {
             <h3>Nhu Cầu Năng Lượng & Đại Chất</h3>
           </div>
           <div className="card-body">
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+            <div className="stat-grid-2" style={{ gap: 12, marginBottom: 16 }}>
               <div className="metric-card info">
                 <div className="metric-label">NL chuẩn (WHO)</div>
                 <div className="metric-value" style={{ color: 'var(--info)' }}>
@@ -212,7 +214,7 @@ export function ResultTab() {
                 Béo 30%
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 12 }}>
+            <div className="stat-grid-3" style={{ gap: 8, marginTop: 12 }}>
               <MacroStat color="#FF6F00" bg="#FFF8E1" value={`${r.carbG}g`} label="Bột đường" kcal={carbKcal} pct={55} />
               <MacroStat color="#0277BD" bg="#E1F5FE" value={`${r.proteinG}g`} label="Đạm (Protein)" kcal={protKcal} pct={15} />
               <MacroStat color="#2E7D32" bg="#E8F5E9" value={`${r.lipidG}g`} label="Chất béo" kcal={lipKcal} pct={30} />

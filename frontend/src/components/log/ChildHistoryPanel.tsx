@@ -103,6 +103,7 @@ export function ChildHistoryPanel({ childId, onBack, autoEditContact }: ChildHis
                       <th>Chiều cao (cm)</th>
                       <th>BMI</th>
                       <th>Z-score CN/Tuổi</th>
+                      <th>Khám bởi</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -113,6 +114,7 @@ export function ChildHistoryPanel({ childId, onBack, autoEditContact }: ChildHis
                         <td>{v.height}</td>
                         <td>{v.bmi}</td>
                         <td>{v.wfaZ != null ? v.wfaZ.toFixed(2) : '—'}</td>
+                        <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{v.examinedByName ?? '—'}</td>
                       </tr>
                     ))}
                   </tbody>

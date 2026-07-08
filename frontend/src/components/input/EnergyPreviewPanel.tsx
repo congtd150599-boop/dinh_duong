@@ -51,7 +51,7 @@ export function EnergyPreviewPanel({ result }: { result: AssessmentResult | null
           Béo
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+      <div className="stat-grid-3" style={{ gap: 8 }}>
         <div style={{ textAlign: 'center', padding: 10, background: '#FFF8E1', borderRadius: 8 }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: '#FF6F00' }}>{result.carbG}g</div>
           <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Bột đường ({carbPct}%)</div>

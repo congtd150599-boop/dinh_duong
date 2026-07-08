@@ -78,24 +78,26 @@ export function GrowthStandardsTab() {
             <p>Đang tải...</p>
           ) : (
             <>
-              <table className="data-table" style={{ marginBottom: 12 }}>
-                <thead>
-                  <tr>
-                    <th>Giới</th>
-                    <th>Chỉ số</th>
-                    <th>Số mốc tháng</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {summary.rows.map((r) => (
-                    <tr key={`${r.gender}-${r.metric}`}>
-                      <td>{r.gender}</td>
-                      <td>{r.metric}</td>
-                      <td>{r.count}</td>
+              <div style={{ overflowX: 'auto', marginBottom: 12 }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Giới</th>
+                      <th>Chỉ số</th>
+                      <th>Số mốc tháng</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {summary.rows.map((r) => (
+                      <tr key={`${r.gender}-${r.metric}`}>
+                        <td>{r.gender}</td>
+                        <td>{r.metric}</td>
+                        <td>{r.count}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>
                 <strong>Nguồn dữ liệu:</strong>
                 <ul style={{ marginTop: 4, paddingLeft: 18 }}>

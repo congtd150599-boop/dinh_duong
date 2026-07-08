@@ -18,10 +18,12 @@ interface Filters {
   wfh: string | 'all';
   from: string;
   to: string;
+  onlyMine: boolean;
 }
 
-const emptyFilters: Filters = { search: '', gender: 'all', wfh: 'all', from: '', to: '' };
+const emptyFilters: Filters = { search: '', gender: 'all', wfh: 'all', from: '', to: '', onlyMine: false };
 
+/** onlyMine compares against the logged-in user's id, so it can't live inside matchesFilters (which only sees the patient row) — checked separately by the caller. */
 function matchesFilters(p: PatientRecord, f: Filters): boolean {
   if (f.search.trim() && !p.name.toLowerCase().includes(f.search.trim().toLowerCase())) return false;
   if (f.gender !== 'all' && p.gender !== f.gender) return false;
@@ -63,7 +65,10 @@ export function LogTab() {
   const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const [autoEditContact, setAutoEditContact] = useState(false);
 
-  const filtered = useMemo(() => (patients ?? []).filter((p) => matchesFilters(p, filters)), [patients, filters]);
+  const filtered = useMemo(
+    () => (patients ?? []).filter((p) => matchesFilters(p, filters) && (!filters.onlyMine || p.examinedByUserId === user?.id)),
+    [patients, filters, user?.id],
+  );
   const alertsByVisitId = useMemo(() => buildAlertsByVisitId(patients ?? []), [patients]);
 
   const stats = useMemo(() => {
@@ -178,6 +183,10 @@ export function LogTab() {
                 <label className="form-label">Đến</label>
                 <input type="date" className="form-control" value={filters.to} onChange={(e) => update('to', e.target.value)} />
               </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text-secondary)', paddingBottom: 8 }}>
+                <input type="checkbox" checked={filters.onlyMine} onChange={(e) => update('onlyMine', e.target.checked)} />
+                Chỉ hồ sơ của tôi
+              </label>
               {hasActiveFilters && (
                 <button className="btn-secondary" onClick={() => setFilters(emptyFilters)}>
                   ✕ Xóa lọc
@@ -206,6 +215,7 @@ export function LogTab() {
                 <th>NL cá nhân</th>
                 <th>Đánh giá vi chất</th>
                 <th>Ngày TK</th>
+                <th>Khám bởi</th>
                 <th>Liên hệ</th>
                 <th></th>
               </tr>
@@ -213,13 +223,13 @@ export function LogTab() {
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={15} style={{ textAlign: 'center', padding: 24 }}>
+                  <td colSpan={16} style={{ textAlign: 'center', padding: 24 }}>
                     Đang tải...
                   </td>
                 </tr>
               ) : !patients || patients.length === 0 ? (
                 <tr>
-                  <td colSpan={15}>
+                  <td colSpan={16}>
                     <div className="log-empty">
                       <div className="icon">📭</div>
                       <p>
@@ -232,7 +242,7 @@ export function LogTab() {
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={15} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>
+                  <td colSpan={16} style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>
                     Không tìm thấy hồ sơ nào khớp bộ lọc.
                   </td>
                 </tr>
@@ -267,6 +277,7 @@ export function LogTab() {
                         <td>{p.targetEnergy} kcal</td>
                         <td style={{ fontSize: 11, maxWidth: 200 }}>{p.labAssessmentSummary}</td>
                         <td>{p.revisit ? p.revisit.slice(0, 10) : '—'}</td>
+                        <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{p.examinedByName ?? '—'}</td>
                         <td>
                           {p.hasQualifyingGuardian ? (
                             <button

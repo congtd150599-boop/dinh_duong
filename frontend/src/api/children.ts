@@ -12,6 +12,7 @@ export interface ChildHistoryVisit {
   height: number;
   bmi: number;
   wfaZ: number | null;
+  examinedByName: string | null;
 }
 
 export interface ChildHistory {

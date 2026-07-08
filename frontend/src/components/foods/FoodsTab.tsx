@@ -185,7 +185,7 @@ export function FoodsTab() {
         title="Danh sách thực phẩm"
         extra={
           <input
-            className="form-control"
+            className="form-control card-header-search"
             style={{ maxWidth: 240, marginLeft: 'auto' }}
             placeholder="Tìm theo tên hoặc nhóm..."
             value={search}

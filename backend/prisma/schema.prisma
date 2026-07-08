@@ -32,6 +32,19 @@ model Patient {
   childId String
   child   Child  @relation(fields: [childId], references: [id])
 
+  // Which staff account recorded this visit — attribution/filtering only
+  // ("Khám bởi", "Danh sách của tôi"), NEVER a visibility restriction: every
+  // visit stays readable by every staff account regardless of who examined
+  // it, because a doctor picking up a follow-up visit must see the full
+  // history a *different* doctor recorded to avoid missing prior alerts/
+  // allergies (this is why Child groups every visit in the first place — see
+  // Child's doc comment). Nullable because visits recorded before this field
+  // existed have no known examiner, and a real FK (not a snapshot like
+  // AuditLog.userId) is safe here since User rows are only ever
+  // deactivated (status), never hard-deleted — see User's doc comment.
+  examinedByUserId String?
+  examinedBy       User?   @relation(fields: [examinedByUserId], references: [id])
+
   reportEmailLogs ReportEmailLog[]
 
   // raw optional lab inputs
@@ -150,6 +163,8 @@ model User {
   passwordHash String
   role         String // 'admin' | 'bac_si' | 'dieu_duong' — validated via zod at the API boundary, not a Postgres enum
   status       String   @default("active") // 'pending' | 'active' | 'disabled' — validated via zod at the API boundary, not a Postgres enum
+
+  examinedPatients Patient[]
 }
 
 // Growth-reference median lookup (WFA/HFA), separated from code so it can be

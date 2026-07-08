@@ -51,7 +51,7 @@ async function ensureQualifyingGuardian(prisma: PrismaClient, childId: string, i
   }
 }
 
-export async function createPatient(prisma: PrismaClient, input: AssessmentInput) {
+export async function createPatient(prisma: PrismaClient, input: AssessmentInput, examinedByUserId: string | null) {
   const result = runAssessment(input);
   const childId = await resolveChildId(prisma, input);
   await ensureQualifyingGuardian(prisma, childId, input);
@@ -59,6 +59,7 @@ export async function createPatient(prisma: PrismaClient, input: AssessmentInput
   return prisma.patient.create({
     data: {
       childId,
+      examinedByUserId,
       name: result.name,
       dob: new Date(result.dob),
       examDate: new Date(result.examDate),
@@ -94,24 +95,31 @@ export async function createPatient(prisma: PrismaClient, input: AssessmentInput
 }
 
 export async function listPatients(prisma: PrismaClient) {
-  const patients = await prisma.patient.findMany({ orderBy: { createdAt: 'asc' }, include: { child: { include: { guardians: true } } } });
+  const patients = await prisma.patient.findMany({
+    orderBy: { createdAt: 'asc' },
+    include: { child: { include: { guardians: true } }, examinedBy: { select: { name: true } } },
+  });
   // "stt" (display order number) is computed here, not stored — see plan notes on
   // why the legacy sequential-number bug (never renumbered after delete) isn't ported.
   // hasQualifyingGuardian is read-only here, denormalized from the joined
   // Child's Guardian rows purely so LogTab can show a "Liên hệ" column
   // without an extra round-trip per row — Guardian stays the source of truth.
-  return patients.map(({ child, ...p }, index) => ({
+  return patients.map(({ child, examinedBy, ...p }, index) => ({
     ...p,
     stt: index + 1,
     hasQualifyingGuardian: child.guardians.some((g) => !!g.email && !!g.phone),
+    examinedByName: examinedBy?.name ?? null,
   }));
 }
 
 export async function getPatient(prisma: PrismaClient, id: string) {
-  const patient = await prisma.patient.findUnique({ where: { id }, include: { child: { include: { guardians: true } } } });
+  const patient = await prisma.patient.findUnique({
+    where: { id },
+    include: { child: { include: { guardians: true } }, examinedBy: { select: { name: true } } },
+  });
   if (!patient) return null;
-  const { child, ...p } = patient;
-  return { ...p, hasQualifyingGuardian: child.guardians.some((g) => !!g.email && !!g.phone) };
+  const { child, examinedBy, ...p } = patient;
+  return { ...p, hasQualifyingGuardian: child.guardians.some((g) => !!g.email && !!g.phone), examinedByName: examinedBy?.name ?? null };
 }
 
 /** Returns the deleted row (for the caller to build an audit-log summary from) or null if no such patient existed. */

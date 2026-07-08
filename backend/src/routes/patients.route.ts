@@ -21,7 +21,7 @@ export function buildPatientsRouter(prisma: PrismaClient): Router {
         return;
       }
       try {
-        const patient = await createPatient(prisma, parsed.data);
+        const patient = await createPatient(prisma, parsed.data, req.user!.id);
         await recordAudit(prisma, {
           user: req.user!,
           action: 'patient.create',
