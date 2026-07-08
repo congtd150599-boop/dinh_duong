@@ -39,9 +39,6 @@ describe('runAssessment — normal growth at exact WHO median (m=24, boy)', () =
     expect(result.proteinG).toBe(60);
     expect(result.lipidG).toBe(40);
   });
-  it('selects the 3-5y_Bình thường menu (ageKey boundary quirk: `m < 24` means m=24 already falls in the 3-5y bucket, not 12-24m)', () => {
-    expect(result.menuKey).toBe('3-5y_Bình thường');
-  });
 });
 
 describe('runAssessment — overweight/obesity via WFH (m=24, boy, median height, high weight)', () => {
@@ -68,9 +65,6 @@ describe('runAssessment — overweight/obesity via WFH (m=24, boy, median height
     expect(result.carbG).toBe(84);
     expect(result.proteinG).toBe(84);
     expect(result.lipidG).toBe(32);
-  });
-  it('selects the 3-5y_Thừa cân/Béo phì menu (same ageKey boundary quirk as above)', () => {
-    expect(result.menuKey).toBe('3-5y_Thừa cân/Béo phì');
   });
 });
 

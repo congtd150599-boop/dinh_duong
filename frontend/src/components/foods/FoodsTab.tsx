@@ -23,6 +23,8 @@ const emptyForm: CreateFoodInput = {
   proteinPer100: 0,
   carbPer100: 0,
   fatPer100: 0,
+  costPer100: null,
+  preferenceScore: 3,
   benefits: '',
   cautionNote: '',
   conditionTags: [],
@@ -37,6 +39,8 @@ function toForm(food: FoodRecord): CreateFoodInput {
     proteinPer100: food.proteinPer100,
     carbPer100: food.carbPer100,
     fatPer100: food.fatPer100,
+    costPer100: food.costPer100,
+    preferenceScore: food.preferenceScore,
     benefits: food.benefits ?? '',
     cautionNote: food.cautionNote ?? '',
     conditionTags: food.conditionTags,
@@ -199,6 +203,8 @@ export function FoodsTab() {
                   <th>Tên</th>
                   <th>Nhóm</th>
                   <th>Năng lượng</th>
+                  <th>Chi phí/100g</th>
+                  <th>Ưa thích</th>
                   <th>Lưu ý</th>
                   <th>Công dụng</th>
                   {canEdit && <th></th>}
@@ -217,6 +223,8 @@ export function FoodsTab() {
                     </td>
                     <td>{f.category}</td>
                     <td>{f.kcalPer100} kcal/100g</td>
+                    <td>{f.costPer100 != null ? `${f.costPer100.toLocaleString('vi-VN')}đ` : <span style={{ color: 'var(--text-muted)' }}>—</span>}</td>
+                    <td>{'⭐'.repeat(f.preferenceScore)}</td>
                     <td>
                       {f.conditionTags.length === 0 ? (
                         <span style={{ color: 'var(--text-muted)' }}>—</span>
@@ -273,7 +281,7 @@ export function FoodsTab() {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={canEdit ? 6 : 5} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <td colSpan={canEdit ? 8 : 7} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                       Không có thực phẩm nào khớp.
                     </td>
                   </tr>
@@ -358,6 +366,35 @@ export function FoodsTab() {
                   />
                 </div>
               </div>
+              <div className="grid-2" style={{ gap: 12 }}>
+                <div className="form-group">
+                  <label className="form-label">Chi phí (đ/100g)</label>
+                  <input
+                    type="number"
+                    step="100"
+                    min="0"
+                    className="form-control"
+                    placeholder="Chưa có giá"
+                    value={form.costPer100 ?? ''}
+                    onChange={(e) => setForm({ ...form, costPer100: e.target.value === '' ? null : Number(e.target.value) })}
+                  />
+                  <div className="form-hint">Để trống nếu chưa rõ giá — thực đơn sẽ không bị ảnh hưởng bởi chi phí.</div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Mức độ ưa thích</label>
+                  <select
+                    className="form-control"
+                    value={form.preferenceScore ?? 3}
+                    onChange={(e) => setForm({ ...form, preferenceScore: Number(e.target.value) })}
+                  >
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <option key={n} value={n}>
+                        {'⭐'.repeat(n)} ({n})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
               <div className="form-group">
                 <label className="form-label">Công dụng / tác dụng dinh dưỡng</label>
                 <textarea
@@ -414,8 +451,11 @@ export function FoodsTab() {
             <InfoBox tone="info">
               Nhập CSV sẽ <strong>cập nhật</strong> thực phẩm trùng tên và <strong>thêm mới</strong> thực phẩm chưa có — không xoá dữ liệu hiện có.
               Cột bắt buộc theo thứ tự:{' '}
-              <code>name,category,kcalPer100,proteinPer100,carbPer100,fatPer100,benefits,cautionNote,conditionTags,source</code>. Cột{' '}
-              <code>conditionTags</code> nhiều giá trị cách nhau bởi dấu <code>|</code>, ví dụ <code>"Tiểu đường|Gout"</code>.
+              <code>
+                name,category,kcalPer100,proteinPer100,carbPer100,fatPer100,costPer100,preferenceScore,benefits,cautionNote,conditionTags,source
+              </code>
+              . Cột <code>conditionTags</code> nhiều giá trị cách nhau bởi dấu <code>|</code>, ví dụ <code>"Tiểu đường|Gout"</code>. Cột{' '}
+              <code>costPer100</code> để trống nếu chưa có giá; <code>preferenceScore</code> từ 1-5 (để trống = mặc định 3).
             </InfoBox>
             <div className="form-group" style={{ marginTop: 12 }}>
               <label className="form-label">Chọn file CSV</label>

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Food" ADD COLUMN     "costPer100" DOUBLE PRECISION,
+ADD COLUMN     "preferenceScore" INTEGER NOT NULL DEFAULT 3;

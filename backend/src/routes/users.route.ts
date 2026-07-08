@@ -5,8 +5,8 @@ import { createUser, listUsers, resetPassword, updateUser, UserServiceError } fr
 import { asyncHandler } from '../utils/async-handler';
 import { createUserSchema, resetPasswordSchema, updateUserSchema } from '../validation/user.schema';
 
-const USER_FIELD_LABELS = { name: 'Họ tên', role: 'Vai trò', isActive: 'Trạng thái' };
-const ACTIVE_LABEL = { true: 'Đang hoạt động', false: 'Đã vô hiệu hóa' } as const;
+const USER_FIELD_LABELS = { name: 'Họ tên', role: 'Vai trò', status: 'Trạng thái' };
+const STATUS_LABEL: Record<string, string> = { pending: 'Đang chờ duyệt', active: 'Đang hoạt động', disabled: 'Đã vô hiệu hóa' };
 
 export function buildUsersRouter(prisma: PrismaClient): Router {
   const router = Router();
@@ -62,12 +62,12 @@ export function buildUsersRouter(prisma: PrismaClient): Router {
           {
             name: before?.name ?? null,
             role: before?.role ?? null,
-            isActive: before ? ACTIVE_LABEL[String(before.isActive) as 'true' | 'false'] : null,
+            status: before ? STATUS_LABEL[before.status] : null,
           },
           {
             name: user.name,
             role: user.role,
-            isActive: ACTIVE_LABEL[String(user.isActive) as 'true' | 'false'],
+            status: STATUS_LABEL[user.status],
           },
           USER_FIELD_LABELS,
         );

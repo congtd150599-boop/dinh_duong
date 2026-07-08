@@ -56,7 +56,7 @@ export async function bootstrapAdminIfNeeded(prisma: PrismaClient): Promise<void
 
   const passwordHash = await hashPassword(password);
   await prisma.user.create({
-    data: { name, email, passwordHash, role: 'admin' satisfies Role, isActive: true },
+    data: { name, email, passwordHash, role: 'admin' satisfies Role, status: 'active' },
   });
   console.log(`Bootstrapped first admin account: ${email}`);
 }

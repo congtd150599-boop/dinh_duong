@@ -43,10 +43,23 @@ function csvEscape(value: unknown): string {
   return `"${String(value ?? '').replace(/"/g, '""')}"`;
 }
 
-const HEADER = ['name', 'category', 'kcalper100', 'proteinper100', 'carbper100', 'fatper100', 'benefits', 'cautionnote', 'conditiontags', 'source'];
+const HEADER = [
+  'name',
+  'category',
+  'kcalper100',
+  'proteinper100',
+  'carbper100',
+  'fatper100',
+  'costper100',
+  'preferencescore',
+  'benefits',
+  'cautionnote',
+  'conditiontags',
+  'source',
+];
 
 /**
- * Parses a CSV with header `name,category,kcalPer100,proteinPer100,carbPer100,fatPer100,benefits,cautionNote,conditionTags,source`.
+ * Parses a CSV with header `name,category,kcalPer100,proteinPer100,carbPer100,fatPer100,costPer100,preferenceScore,benefits,cautionNote,conditionTags,source`.
  * `conditionTags` is a `|`-separated list of tags from FOOD_CONDITION_TAGS inside one quoted field (e.g. "Tiểu đường|Gout").
  * Throws FoodImportError with a 1-based line number on the first malformed row — the whole import is rejected rather
  * than partially applied (see importFoods, which upserts by name so this never wipes isSystemDefault rows).
@@ -65,10 +78,11 @@ export function parseFoodsCsv(csvText: string): CreateFoodInput[] {
     const lineNumber = i + 1;
     if (!lines[i].trim()) continue;
     const cols = parseCsvLine(lines[i]);
-    if (cols.length < 10) {
-      throw new FoodImportError(`Dòng ${lineNumber}: thiếu cột (cần đủ 10 cột, có ${cols.length})`, lineNumber);
+    if (cols.length < HEADER.length) {
+      throw new FoodImportError(`Dòng ${lineNumber}: thiếu cột (cần đủ ${HEADER.length} cột, có ${cols.length})`, lineNumber);
     }
-    const [nameRaw, categoryRaw, kcalRaw, proteinRaw, carbRaw, fatRaw, benefits, cautionNote, conditionTagsRaw, source] = cols;
+    const [nameRaw, categoryRaw, kcalRaw, proteinRaw, carbRaw, fatRaw, costRaw, preferenceRaw, benefits, cautionNote, conditionTagsRaw, source] =
+      cols;
 
     const name = nameRaw.trim();
     if (!name) throw new FoodImportError(`Dòng ${lineNumber}: name không được để trống`, lineNumber);
@@ -89,6 +103,15 @@ export function parseFoodsCsv(csvText: string): CreateFoodInput[] {
       throw new FoodImportError(`Dòng ${lineNumber}: proteinPer100/carbPer100/fatPer100 phải là số không âm`, lineNumber);
     }
 
+    const costPer100 = costRaw.trim() === '' ? null : Number(costRaw);
+    if (costPer100 !== null && (!Number.isFinite(costPer100) || costPer100 < 0)) {
+      throw new FoodImportError(`Dòng ${lineNumber}: costPer100 phải là số không âm hoặc để trống, nhận được "${costRaw}"`, lineNumber);
+    }
+    const preferenceScore = preferenceRaw.trim() === '' ? 3 : Number(preferenceRaw);
+    if (!Number.isInteger(preferenceScore) || preferenceScore < 1 || preferenceScore > 5) {
+      throw new FoodImportError(`Dòng ${lineNumber}: preferenceScore phải là số nguyên 1-5, nhận được "${preferenceRaw}"`, lineNumber);
+    }
+
     const conditionTags = conditionTagsRaw
       .split('|')
       .map((t) => t.trim())
@@ -106,6 +129,8 @@ export function parseFoodsCsv(csvText: string): CreateFoodInput[] {
       proteinPer100,
       carbPer100,
       fatPer100,
+      costPer100,
+      preferenceScore,
       benefits: benefits.trim() || null,
       cautionNote: cautionNote.trim() || null,
       conditionTags: conditionTags as FoodConditionTag[],
@@ -137,6 +162,8 @@ export async function importFoods(prisma: PrismaClient, records: CreateFoodInput
         proteinPer100: r.proteinPer100 ?? 0,
         carbPer100: r.carbPer100 ?? 0,
         fatPer100: r.fatPer100 ?? 0,
+        costPer100: r.costPer100 ?? null,
+        preferenceScore: r.preferenceScore ?? 3,
         benefits: r.benefits ?? null,
         cautionNote: r.cautionNote ?? null,
         conditionTags: r.conditionTags ?? [],
@@ -149,6 +176,8 @@ export async function importFoods(prisma: PrismaClient, records: CreateFoodInput
         proteinPer100: r.proteinPer100 ?? 0,
         carbPer100: r.carbPer100 ?? 0,
         fatPer100: r.fatPer100 ?? 0,
+        costPer100: r.costPer100 ?? null,
+        preferenceScore: r.preferenceScore ?? 3,
         benefits: r.benefits ?? null,
         cautionNote: r.cautionNote ?? null,
         conditionTags: r.conditionTags ?? [],
@@ -170,6 +199,8 @@ export async function exportFoodsCsv(prisma: PrismaClient): Promise<string> {
       f.proteinPer100,
       f.carbPer100,
       f.fatPer100,
+      f.costPer100 ?? '',
+      f.preferenceScore,
       f.benefits ?? '',
       f.cautionNote ?? '',
       f.conditionTags.join('|'),

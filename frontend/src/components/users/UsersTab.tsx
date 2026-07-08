@@ -1,12 +1,13 @@
-import type { Role, UserRecord } from '@dinhduong/shared';
+import type { Role, UserRecord, UserStatus } from '@dinhduong/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { triggerBackup } from '../../api/admin';
-import { createUser, listUsers, resetPassword, updateUser, type CreateUserInput } from '../../api/users';
+import { createUser, listUsers, resetPassword, updateUser, type CreateUserInput, type UpdateUserInput } from '../../api/users';
 import { ApiError } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { useAuditLogs, useBackups } from '../../hooks/useAdmin';
 import { Card } from '../shared/Card';
+import { InfoBox } from '../shared/InfoBox';
 import { useToast } from '../shared/ToastContext';
 
 function formatBytes(bytes: number): string {
@@ -22,6 +23,12 @@ const ROLE_LABELS: Record<Role, string> = {
 };
 
 const ROLE_OPTIONS: Role[] = ['admin', 'bac_si', 'dieu_duong'];
+
+const STATUS_BADGE: Record<UserStatus, { label: string; bg: string; color: string }> = {
+  pending: { label: 'Đang chờ duyệt', bg: 'var(--warning-light)', color: 'var(--warning)' },
+  active: { label: 'Đang hoạt động', bg: 'var(--success-light)', color: 'var(--success)' },
+  disabled: { label: 'Đã vô hiệu hóa', bg: 'var(--surface-2)', color: 'var(--text-muted)' },
+};
 
 const initialForm: CreateUserInput = { name: '', email: '', password: '', role: 'dieu_duong' };
 
@@ -51,7 +58,7 @@ export function UsersTab() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: Parameters<typeof updateUser>[1] }) => updateUser(id, input),
+    mutationFn: ({ id, input }: { id: string; input: UpdateUserInput }) => updateUser(id, input),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
     onError: (err) => showToast(errorMessage(err, 'Cập nhật thất bại'), 'error'),
   });
@@ -66,9 +73,24 @@ export function UsersTab() {
   }
 
   function handleToggleActive(u: UserRecord) {
-    const action = u.isActive ? 'vô hiệu hóa' : 'kích hoạt lại';
-    if (!confirm(`Xác nhận ${action} tài khoản "${u.name}"?`)) return;
-    updateMutation.mutate({ id: u.id, input: { isActive: !u.isActive } });
+    const goingActive = u.status !== 'active';
+    if (!confirm(`Xác nhận ${goingActive ? 'kích hoạt lại' : 'vô hiệu hóa'} tài khoản "${u.name}"?`)) return;
+    updateMutation.mutate({ id: u.id, input: { status: goingActive ? 'active' : 'disabled' } });
+  }
+
+  function handleApprove(u: UserRecord, role: Role) {
+    updateMutation.mutate(
+      { id: u.id, input: { status: 'active', role } },
+      { onSuccess: () => showToast(`✅ Đã duyệt tài khoản "${u.name}".`, 'success') },
+    );
+  }
+
+  function handleReject(u: UserRecord) {
+    if (!confirm(`Từ chối yêu cầu đăng ký của "${u.name}"? Tài khoản sẽ ở trạng thái vô hiệu hóa.`)) return;
+    updateMutation.mutate(
+      { id: u.id, input: { status: 'disabled' } },
+      { onSuccess: () => showToast(`Đã từ chối tài khoản "${u.name}".`, 'success') },
+    );
   }
 
   function handleResetPassword(u: UserRecord) {
@@ -79,6 +101,9 @@ export function UsersTab() {
       .catch((err) => showToast(errorMessage(err, 'Đặt lại mật khẩu thất bại'), 'error'));
   }
 
+  const pendingUsers = (users ?? []).filter((u) => u.status === 'pending');
+  const otherUsers = (users ?? []).filter((u) => u.status !== 'pending');
+
   return (
     <div>
       <h2 style={{ fontFamily: "'Outfit',sans-serif", fontSize: 20, fontWeight: 700, color: 'var(--primary-dark)', marginBottom: 4 }}>
@@ -87,6 +112,12 @@ export function UsersTab() {
       <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20 }}>
         Tạo tài khoản, phân quyền, vô hiệu hóa/kích hoạt và đặt lại mật khẩu cho nhân viên phòng khám.
       </p>
+
+      {!isLoading && pendingUsers.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <PendingApprovalCard pendingUsers={pendingUsers} onApprove={handleApprove} onReject={handleReject} isBusy={updateMutation.isPending} />
+        </div>
+      )}
 
       <div className="grid-list-form" style={{ alignItems: 'start' }}>
         <Card icon="📋" iconBg="#E3F2FD" title="Danh sách người dùng">
@@ -105,7 +136,7 @@ export function UsersTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(users ?? []).map((u) => (
+                  {otherUsers.map((u) => (
                     <tr key={u.id}>
                       <td>{u.name}</td>
                       <td>{u.email}</td>
@@ -133,11 +164,11 @@ export function UsersTab() {
                             fontWeight: 600,
                             padding: '3px 8px',
                             borderRadius: 6,
-                            background: u.isActive ? 'var(--success-light)' : 'var(--surface-2)',
-                            color: u.isActive ? 'var(--success)' : 'var(--text-muted)',
+                            background: STATUS_BADGE[u.status].bg,
+                            color: STATUS_BADGE[u.status].color,
                           }}
                         >
-                          {u.isActive ? 'Đang hoạt động' : 'Đã vô hiệu hóa'}
+                          {STATUS_BADGE[u.status].label}
                         </span>
                       </td>
                       <td>
@@ -150,12 +181,12 @@ export function UsersTab() {
                             🔑 Đặt lại mật khẩu
                           </button>
                           <button
-                            className={u.isActive ? 'btn-danger' : 'btn-secondary'}
+                            className={u.status === 'active' ? 'btn-danger' : 'btn-secondary'}
                             style={{ padding: '8px 14px', fontSize: 12, whiteSpace: 'nowrap' }}
                             disabled={u.id === me?.id}
                             onClick={() => handleToggleActive(u)}
                           >
-                            {u.isActive ? 'Vô hiệu hóa' : 'Kích hoạt'}
+                            {u.status === 'active' ? 'Vô hiệu hóa' : 'Kích hoạt'}
                           </button>
                         </div>
                       </td>
@@ -334,5 +365,74 @@ function AuditLogCard() {
         </div>
       )}
     </Card>
+  );
+}
+
+function PendingApprovalCard({
+  pendingUsers,
+  onApprove,
+  onReject,
+  isBusy,
+}: {
+  pendingUsers: UserRecord[];
+  onApprove: (u: UserRecord, role: Role) => void;
+  onReject: (u: UserRecord) => void;
+  isBusy: boolean;
+}) {
+  return (
+    <Card icon="🕐" iconBg="#FFF8E1" title={`Đang Chờ Duyệt (${pendingUsers.length})`}>
+      <InfoBox tone="warn">Nhân viên đã tự đăng ký tài khoản dưới đây — chọn đúng vai trò rồi duyệt để họ đăng nhập được, hoặc từ chối nếu không hợp lệ.</InfoBox>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+        {pendingUsers.map((u) => (
+          <PendingUserRow key={u.id} user={u} onApprove={onApprove} onReject={onReject} isBusy={isBusy} />
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function PendingUserRow({
+  user,
+  onApprove,
+  onReject,
+  isBusy,
+}: {
+  user: UserRecord;
+  onApprove: (u: UserRecord, role: Role) => void;
+  onReject: (u: UserRecord) => void;
+  isBusy: boolean;
+}) {
+  const [role, setRole] = useState<Role>(user.role);
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        flexWrap: 'wrap',
+        padding: '10px 12px',
+        border: '1px solid var(--border)',
+        borderRadius: 10,
+      }}
+    >
+      <div style={{ flex: '1 1 200px' }}>
+        <strong>{user.name}</strong>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{user.email}</div>
+      </div>
+      <select className="form-control" style={{ minWidth: 150, width: 'auto' }} value={role} onChange={(e) => setRole(e.target.value as Role)}>
+        {ROLE_OPTIONS.map((r) => (
+          <option key={r} value={r}>
+            {ROLE_LABELS[r]}
+          </option>
+        ))}
+      </select>
+      <button className="btn-secondary" style={{ padding: '8px 14px', fontSize: 12 }} disabled={isBusy} onClick={() => onApprove(user, role)}>
+        ✅ Duyệt
+      </button>
+      <button className="btn-danger" style={{ padding: '8px 14px', fontSize: 12 }} disabled={isBusy} onClick={() => onReject(user)}>
+        ❌ Từ chối
+      </button>
+    </div>
   );
 }

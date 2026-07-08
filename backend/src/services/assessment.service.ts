@@ -1,19 +1,10 @@
 import { monthsBetween, type AssessmentInput, type AssessmentResult } from '@dinhduong/shared';
-import type { AgeKey } from '../data/menu.data';
 import { calcEnergy, calcMacros } from './energy.service';
 import { assessLabs } from './lab-assessment.service';
-import { applyMenuFilters } from './menu-filter.service';
-import { buildMenuWithQuantities, getBaseMenu } from './menu.service';
+import { generateOptimizedMenu } from './menu-optimizer.service';
 import { getHfaLms, getHfaMedian, getWfaLms, getWfaMedian } from './growth-standards.service';
 import { getWfhLms } from './wfh-lms.service';
 import { computeZScores } from './z-score.service';
-
-function getAgeKey(months: number): AgeKey {
-  if (months < 12) return '6-12m';
-  if (months < 24) return '12-24m';
-  if (months < 72) return '3-5y';
-  return '6y+';
-}
 
 /**
  * Pure orchestrator equivalent to legacy/index.html calculate() (lines 2164-2342).
@@ -43,7 +34,6 @@ export function runAssessment(input: AssessmentInput): AssessmentResult {
     else muacStatus = 'Bình thường (≥12.5cm)';
   }
 
-  const ageKey = getAgeKey(months);
   let statusKey = 'Bình thường';
   if (wfhZ !== null && (wfhZ < -2 || (wfaZ !== null && wfaZ < -2))) statusKey = 'Suy dinh dưỡng';
   else if (hfaZ < -3 || (months > 60 && hfaZ < -2)) statusKey = 'Suy dinh dưỡng';
@@ -62,16 +52,14 @@ export function runAssessment(input: AssessmentInput): AssessmentResult {
 
   const labs = assessLabs(months, input.labs);
 
-  const menuKey = `${ageKey}_${statusKey}`;
-  const baseMenu = applyMenuFilters(getBaseMenu(ageKey, statusKey), input.menuFilters ?? {});
-  const menu = buildMenuWithQuantities({
-    baseMenu,
+  const menu = generateOptimizedMenu({
     months,
     targetEnergy,
     carbG,
     proteinG,
     lipidG,
     statusKey,
+    filters: input.menuFilters ?? {},
   });
 
   return {
@@ -103,7 +91,6 @@ export function runAssessment(input: AssessmentInput): AssessmentResult {
     lipidG,
     labs,
     menu,
-    menuKey,
     statusKey,
     tuvan: input.tuvan,
     revisit: input.revisit ?? null,

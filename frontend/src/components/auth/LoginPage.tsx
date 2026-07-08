@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { ApiError } from '../../api/client';
 import { InfoBox } from '../shared/InfoBox';
 
-export function LoginPage() {
+export function LoginPage({ onSwitchToRegister }: { onSwitchToRegister: () => void }) {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,7 +17,11 @@ export function LoginPage() {
     try {
       await login(email, password);
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 401 ? 'Email hoặc mật khẩu không đúng' : 'Đăng nhập thất bại, thử lại sau');
+      // A 401 here can mean wrong credentials, a pending (unapproved) self-registration,
+      // or a disabled account — the backend now returns a distinct message for each
+      // (see auth.route.ts), so surface it directly instead of a single generic string.
+      const details = err instanceof ApiError ? (err.details as { error?: string } | undefined) : undefined;
+      setError(details?.error ?? 'Đăng nhập thất bại, thử lại sau');
     } finally {
       setIsSubmitting(false);
     }
@@ -71,6 +75,17 @@ export function LoginPage() {
               {isSubmitting ? 'Đang đăng nhập...' : 'Đăng Nhập'}
             </button>
           </form>
+
+          <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 16, textAlign: 'center' }}>
+            Chưa có tài khoản?{' '}
+            <button
+              type="button"
+              onClick={onSwitchToRegister}
+              style={{ border: 'none', background: 'none', color: 'var(--primary)', textDecoration: 'underline', cursor: 'pointer', padding: 0 }}
+            >
+              Đăng ký tài khoản
+            </button>
+          </p>
         </div>
       </div>
     </div>

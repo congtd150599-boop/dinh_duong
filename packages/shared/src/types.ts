@@ -6,6 +6,9 @@ export type LabStatus = 'deficit' | 'excess' | 'ok';
 export type MealSlot = 'Sáng' | 'Phụ sáng' | 'Trưa' | 'Phụ chiều' | 'Tối' | 'Phụ tối';
 export type Role = 'admin' | 'bac_si' | 'dieu_duong';
 
+/** 'pending' = self-registered, awaiting admin approval (see POST /api/auth/register) — cannot log in until an admin flips this to 'active'. */
+export type UserStatus = 'pending' | 'active' | 'disabled';
+
 export interface LabInputs {
   ca?: number | null;
   vitD?: number | null;
@@ -148,7 +151,6 @@ export interface AssessmentResult {
   lipidG: number;
   labs: LabResult[];
   menu: WeeklyMenu;
-  menuKey: string;
   statusKey: string;
   tuvan: TuVan;
   revisit: string | null;
@@ -202,7 +204,14 @@ export interface UserRecord {
   name: string;
   email: string;
   role: Role;
-  isActive: boolean;
+  status: UserStatus;
+}
+
+/** Payload for POST /api/auth/register — no `role` field: self-registration always lands as 'dieu_duong'/'pending', an admin upgrades the role (if needed) when approving. */
+export interface RegisterInput {
+  name: string;
+  email: string;
+  password: string;
 }
 
 export const FOOD_CATEGORIES = [
@@ -246,11 +255,15 @@ export interface FoodRecord {
   proteinPer100: number;
   carbPer100: number;
   fatPer100: number;
+  /** VNĐ per 100g/100ml — null means "chưa nhập giá", never treated as free by the menu optimizer. */
+  costPer100: number | null;
+  /** 1-5, mức độ phổ biến/dễ ăn theo đánh giá của bác sĩ — mặc định 3. */
+  preferenceScore: number;
   benefits: string | null;
   cautionNote: string | null;
   conditionTags: FoodConditionTag[];
   source: string | null;
-  /** One of the ~20 core items menu.service.ts's dish-keyword matcher resolves to — cannot be deleted via the UI/API. */
+  /** Bundled bootstrap row (food-composition.data.ts) — cannot be deleted via the UI/API, only edited. */
   isSystemDefault: boolean;
 }
 

@@ -113,7 +113,7 @@ function renderLogTab() {
 
 describe('LogTab search/filter/stats', () => {
   it('shows stat tiles reflecting all patients, then narrows on search', async () => {
-    meMock.mockResolvedValue({ user: { id: 'u1', name: 'BS An', email: 'a@test.local', role: 'bac_si', isActive: true } });
+    meMock.mockResolvedValue({ user: { id: 'u1', name: 'BS An', email: 'a@test.local', role: 'bac_si', status: 'active' as const } });
     renderLogTab();
 
     await waitFor(() => expect(screen.getByText('Nguyễn Văn A')).toBeInTheDocument());
@@ -127,7 +127,7 @@ describe('LogTab search/filter/stats', () => {
   });
 
   it('hides the delete button for a dieu_duong (nurse) account', async () => {
-    meMock.mockResolvedValue({ user: { id: 'u2', name: 'ĐD Bình', email: 'b@test.local', role: 'dieu_duong', isActive: true } });
+    meMock.mockResolvedValue({ user: { id: 'u2', name: 'ĐD Bình', email: 'b@test.local', role: 'dieu_duong', status: 'active' as const } });
     renderLogTab();
 
     await waitFor(() => expect(screen.getByText('Nguyễn Văn A')).toBeInTheDocument());

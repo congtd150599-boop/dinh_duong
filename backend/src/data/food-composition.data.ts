@@ -1,16 +1,17 @@
 import type { FoodCategory } from '@dinhduong/shared';
 
 // Bootstrap data for the `Food` table (see food.service.ts). Real per-100g (or
-// per-100ml for liquids) nutrition figures for the fixed set of ingredient
-// categories menu.service.ts's keyword-matching can resolve a dish to.
+// per-100ml for liquids) nutrition figures covering the core food-group
+// categories menu-optimizer.service.ts needs at least a few candidates in,
+// so it always has something to pick from even on a fresh install.
 //
 // These rows are seeded into Postgres as `isSystemDefault: true` on first run
 // (see ensureSystemDefaultsSeeded in food.service.ts) so a doctor can view/edit
 // them — through the same Food CRUD UI as any other food — with menu
 // generation picking up the change immediately. They also back the in-memory
 // cache food.service.ts bootstraps at module init, so any code that calls
-// getFoodComposition() before a database is available (e.g. this project's
-// unit tests) still gets correct, real figures instead of a DB round-trip.
+// getFoodsCache() before a database is available (e.g. this project's unit
+// tests) still gets correct, real figures instead of a DB round-trip.
 //
 // Values are standard, widely-published figures for these common Vietnamese
 // staples (Bảng thành phần thực phẩm Việt Nam, Viện Dinh Dưỡng, and — for
@@ -64,5 +65,3 @@ export const DEFAULT_FOODS: DefaultFoodSeed[] = [
   { name: 'trái cây tươi', category: 'Trái cây', kcalPer100: 50, carbPer100: 13.0, proteinPer100: 0.6, fatPer100: 0.2 }, // average of common fruit
   { name: 'sữa hạt', category: 'Sữa & chế phẩm', kcalPer100: 60, carbPer100: 3.0, proteinPer100: 2.5, fatPer100: 3.5 }, // nut-milk drink
 ];
-
-export const FALLBACK_FOOD_NAME = 'thịt/cá/trứng';

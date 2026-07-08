@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { LoginPage } from './components/auth/LoginPage';
+import { RegisterPage } from './components/auth/RegisterPage';
 import { FoodsTab } from './components/foods/FoodsTab';
 import { GrowthStandardsTab } from './components/growthStandards/GrowthStandardsTab';
 import { InputTab } from './components/input/InputTab';
@@ -16,6 +17,7 @@ export default function App() {
   const { activeTab } = useAppState();
   const { user, isLoading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [authView, setAuthView] = useState<'login' | 'register'>('login');
 
   if (isLoading) {
     return (
@@ -26,7 +28,11 @@ export default function App() {
   }
 
   if (!user) {
-    return <LoginPage />;
+    return authView === 'login' ? (
+      <LoginPage onSwitchToRegister={() => setAuthView('register')} />
+    ) : (
+      <RegisterPage onSwitchToLogin={() => setAuthView('login')} />
+    );
   }
 
   return (

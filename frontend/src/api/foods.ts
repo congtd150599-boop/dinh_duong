@@ -10,6 +10,8 @@ export interface CreateFoodInput {
   proteinPer100?: number;
   carbPer100?: number;
   fatPer100?: number;
+  costPer100?: number | null;
+  preferenceScore?: number;
   benefits?: string | null;
   cautionNote?: string | null;
   conditionTags?: FoodConditionTag[];

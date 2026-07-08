@@ -1,4 +1,4 @@
-import type { Role, UserRecord } from '@dinhduong/shared';
+import type { Role, UserRecord, UserStatus } from '@dinhduong/shared';
 import { apiClient } from './client';
 
 export interface CreateUserInput {
@@ -11,7 +11,7 @@ export interface CreateUserInput {
 export interface UpdateUserInput {
   name?: string;
   role?: Role;
-  isActive?: boolean;
+  status?: UserStatus;
 }
 
 export function listUsers(): Promise<UserRecord[]> {

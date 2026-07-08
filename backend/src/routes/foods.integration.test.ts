@@ -19,9 +19,10 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await truncateAllTables();
-  // Route mutations refresh the in-memory getFoodComposition() cache from the
-  // (now-truncated) test DB — restore the bootstrap defaults so other test
-  // files sharing this process (notably menu.service.test.ts) see correct data.
+  // Route mutations refresh the in-memory getFoodComposition()/getFoodsCache()
+  // cache from the (now-truncated) test DB — restore the bootstrap defaults so
+  // other test files sharing this process (notably menu-optimizer.service.test.ts)
+  // see correct data.
   loadCompositionCache(DEFAULT_FOODS);
 });
 
@@ -144,15 +145,15 @@ describe('DELETE /api/foods/:id', () => {
 });
 
 describe('POST /api/foods/import (CSV upsert)', () => {
-  const csvHeader = 'name,category,kcalPer100,proteinPer100,carbPer100,fatPer100,benefits,cautionNote,conditionTags,source';
+  const csvHeader = 'name,category,kcalPer100,proteinPer100,carbPer100,fatPer100,costPer100,preferenceScore,benefits,cautionNote,conditionTags,source';
 
   it('imports new rows and updates an existing row by name — never deletes others', async () => {
     const existing = await adminAgent.post('/api/foods').send(validPayload);
 
     const csv = [
       csvHeader,
-      `"${validPayload.name}","Trái cây",200,3,9,15,"","",,""`,
-      '"Sữa chua ít đường","Sữa & chế phẩm",56,3.5,4,1.5,"Bổ sung lợi khuẩn","Hạn chế nếu dị ứng đạm sữa bò","Dị ứng đạm sữa bò",""',
+      `"${validPayload.name}","Trái cây",200,3,9,15,,,"","",,""`,
+      '"Sữa chua ít đường","Sữa & chế phẩm",56,3.5,4,1.5,,,"Bổ sung lợi khuẩn","Hạn chế nếu dị ứng đạm sữa bò","Dị ứng đạm sữa bò",""',
     ].join('\n');
 
     const res = await adminAgent.post('/api/foods/import').set('Content-Type', 'text/csv').send(csv);
@@ -170,7 +171,7 @@ describe('POST /api/foods/import (CSV upsert)', () => {
     const seeded = await testPrisma.food.create({
       data: { name: 'test-system-default-2', category: 'Tinh bột', kcalPer100: 100, isSystemDefault: true },
     });
-    const csv = [csvHeader, '"Món mới","Rau củ",30,1,5,0.2,"","",,""'].join('\n');
+    const csv = [csvHeader, '"Món mới","Rau củ",30,1,5,0.2,,,"","",,""'].join('\n');
     await adminAgent.post('/api/foods/import').set('Content-Type', 'text/csv').send(csv);
     expect(await testPrisma.food.findUnique({ where: { id: seeded.id } })).not.toBeNull();
   });
@@ -181,7 +182,7 @@ describe('POST /api/foods/import (CSV upsert)', () => {
   });
 
   it('invalid category in a data row → 400 with line number', async () => {
-    const csv = [csvHeader, '"X","Không tồn tại",100,1,1,1,"","",,""'].join('\n');
+    const csv = [csvHeader, '"X","Không tồn tại",100,1,1,1,,,"","",,""'].join('\n');
     const res = await adminAgent.post('/api/foods/import').set('Content-Type', 'text/csv').send(csv);
     expect(res.status).toBe(400);
     expect(res.body.lineNumber).toBe(2);

@@ -18,12 +18,12 @@ afterAll(async () => {
   await testPrisma.$disconnect();
 });
 
-async function createTestUser(overrides: Partial<{ email: string; password: string; isActive: boolean }> = {}) {
+async function createTestUser(overrides: Partial<{ email: string; password: string; status: string }> = {}) {
   const email = overrides.email ?? 'bacsi.an@test.local';
   const password = overrides.password ?? 'Test1234!';
   const passwordHash = await bcrypt.hash(password, 10);
   await testPrisma.user.create({
-    data: { name: 'Bác sĩ An', email, passwordHash, role: 'bac_si', isActive: overrides.isActive ?? true },
+    data: { name: 'Bác sĩ An', email, passwordHash, role: 'bac_si', status: overrides.status ?? 'active' },
   });
   return { email, password };
 }
@@ -50,13 +50,50 @@ describe('POST /api/auth/login', () => {
   });
 
   it('deactivated user → 401 even with correct password', async () => {
-    const { email, password } = await createTestUser({ email: 'inactive@test.local', isActive: false });
+    const { email, password } = await createTestUser({ email: 'inactive@test.local', status: 'disabled' });
     const res = await request(app).post('/api/auth/login').send({ email, password });
     expect(res.status).toBe(401);
   });
 
+  it('pending (self-registered, not yet approved) user → 401 with a distinct message, even with correct password', async () => {
+    const { email, password } = await createTestUser({ email: 'pending@test.local', status: 'pending' });
+    const res = await request(app).post('/api/auth/login').send({ email, password });
+    expect(res.status).toBe(401);
+    expect(res.body.error).toContain('chờ');
+  });
+
   it('malformed payload (missing password) → 400', async () => {
     const res = await request(app).post('/api/auth/login').send({ email: 'x@test.local' });
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('POST /api/auth/register', () => {
+  it('creates a pending account, does not log in, and never lets the caller pick a role', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({ name: 'Điều dưỡng Mới', email: 'newnurse@test.local', password: 'Test1234!', role: 'admin' });
+
+    expect(res.status).toBe(201);
+    expect(res.headers['set-cookie']).toBeUndefined();
+
+    const created = await testPrisma.user.findUnique({ where: { email: 'newnurse@test.local' } });
+    expect(created).toMatchObject({ role: 'dieu_duong', status: 'pending' });
+
+    const loginAttempt = await request(app).post('/api/auth/login').send({ email: 'newnurse@test.local', password: 'Test1234!' });
+    expect(loginAttempt.status).toBe(401);
+  });
+
+  it('duplicate email → 409', async () => {
+    await createTestUser({ email: 'dup-register@test.local' });
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({ name: 'X', email: 'dup-register@test.local', password: 'Test1234!' });
+    expect(res.status).toBe(409);
+  });
+
+  it('password shorter than 8 chars → 400', async () => {
+    const res = await request(app).post('/api/auth/register').send({ name: 'X', email: 'short-pw@test.local', password: 'short' });
     expect(res.status).toBe(400);
   });
 });

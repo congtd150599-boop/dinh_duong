@@ -14,7 +14,7 @@ export async function loginAsRole(app: Express, role: Role = 'admin') {
   const password = 'Test1234!';
   const passwordHash = await bcrypt.hash(password, 10);
   await testPrisma.user.create({
-    data: { name: `Test ${role}`, email, passwordHash, role, isActive: true },
+    data: { name: `Test ${role}`, email, passwordHash, role, status: 'active' },
   });
 
   const agent = request.agent(app);

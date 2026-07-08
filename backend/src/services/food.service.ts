@@ -1,6 +1,6 @@
 import type { Food, PrismaClient } from '@prisma/client';
 import type { FoodCategory, FoodConditionTag, FoodRecord } from '@dinhduong/shared';
-import { DEFAULT_FOODS, FALLBACK_FOOD_NAME } from '../data/food-composition.data';
+import { DEFAULT_FOODS } from '../data/food-composition.data';
 
 export class FoodServiceError extends Error {
   constructor(
@@ -11,7 +11,7 @@ export class FoodServiceError extends Error {
   }
 }
 
-/** The shape menu.service.ts's dish-quantity math needs — a narrower view of a Food row. */
+/** The narrow nutrition-per-100(g|ml) shape menu-optimizer.service.ts's dish-quantity math needs. */
 export interface FoodComposition {
   kcalPer100: number;
   carbPer100: number;
@@ -30,6 +30,8 @@ function toRecord(food: Food): FoodRecord {
     proteinPer100: food.proteinPer100,
     carbPer100: food.carbPer100,
     fatPer100: food.fatPer100,
+    costPer100: food.costPer100,
+    preferenceScore: food.preferenceScore,
     benefits: food.benefits,
     cautionNote: food.cautionNote,
     conditionTags: food.conditionTags as FoodConditionTag[],
@@ -38,36 +40,55 @@ function toRecord(food: Food): FoodRecord {
   };
 }
 
-// In-memory cache for getFoodComposition() — called synchronously, many times
-// per menu build, so it must never round-trip to the DB. Bootstrapped from
-// DEFAULT_FOODS at module init (so callers with zero DB access, like this
-// project's unit tests, still get correct figures with no DB dependency),
-// then refreshed from Postgres at server startup and after every
-// create/update/delete so a doctor's edit affects the next generated menu
-// immediately — same "no restart needed" property as growth-standards.service.ts.
-let cache = new Map<string, FoodComposition>();
+/** Full shape menu-optimizer.service.ts needs to pick/score candidates — a superset of FoodComposition. */
+export interface FoodCacheEntry extends FoodComposition {
+  name: string;
+  category: FoodCategory;
+  costPer100: number | null;
+  preferenceScore: number;
+}
+
+// In-memory cache for getFoodsCache() — called synchronously, many times
+// per menu build (runAssessment is a pure,
+// DB-free function — see assessment.service.ts), so it must never round-trip
+// to the DB. Bootstrapped from DEFAULT_FOODS at module init (so callers with
+// zero DB access, like this project's unit tests, still get correct figures
+// with no DB dependency), then refreshed from Postgres at server startup and
+// after every create/update/delete so a doctor's edit affects the next
+// generated menu immediately — same "no restart needed" property as
+// growth-standards.service.ts.
+let cache = new Map<string, FoodCacheEntry>();
 
 /** Exported only so integration tests can restore the bootstrap defaults after mutating the cache via the DB — see foods.integration.test.ts. */
-export function loadCompositionCache(foods: Array<FoodComposition & { name: string }>): void {
-  const next = new Map<string, FoodComposition>();
+export function loadCompositionCache(foods: Array<FoodComposition & { name: string; category: FoodCategory; costPer100?: number | null; preferenceScore?: number }>): void {
+  const next = new Map<string, FoodCacheEntry>();
   for (const f of foods) {
-    next.set(f.name, { kcalPer100: f.kcalPer100, carbPer100: f.carbPer100, proteinPer100: f.proteinPer100, fatPer100: f.fatPer100 });
+    next.set(f.name, {
+      name: f.name,
+      category: f.category,
+      kcalPer100: f.kcalPer100,
+      carbPer100: f.carbPer100,
+      proteinPer100: f.proteinPer100,
+      fatPer100: f.fatPer100,
+      costPer100: f.costPer100 ?? null,
+      preferenceScore: f.preferenceScore ?? 3,
+    });
   }
   cache = next;
 }
 
 loadCompositionCache(DEFAULT_FOODS);
 
-/** Looks up nutrition-per-100(g|ml) by exact food name, falling back to a generic average — same fallback behavior as the old static food-composition.data.ts. */
-export function getFoodComposition(label: string): FoodComposition {
-  return cache.get(label) ?? cache.get(FALLBACK_FOOD_NAME)!;
+/** All cached foods, for menu-optimizer.service.ts to filter/score by category. */
+export function getFoodsCache(): FoodCacheEntry[] {
+  return [...cache.values()];
 }
 
 /** Loads the cache from the database. Returns the number of rows loaded (0 = DB empty, bundled default stays active). */
 export async function loadFromDatabase(prisma: PrismaClient): Promise<number> {
   const rows = await prisma.food.findMany();
   if (rows.length === 0) return 0;
-  loadCompositionCache(rows);
+  loadCompositionCache(rows.map((r) => ({ ...r, category: r.category as FoodCategory })));
   return rows.length;
 }
 
@@ -111,6 +132,8 @@ export interface CreateFoodInput {
   proteinPer100?: number;
   carbPer100?: number;
   fatPer100?: number;
+  costPer100?: number | null;
+  preferenceScore?: number;
   benefits?: string | null;
   cautionNote?: string | null;
   conditionTags?: FoodConditionTag[];
@@ -130,6 +153,8 @@ export async function createFood(prisma: PrismaClient, input: CreateFoodInput): 
       proteinPer100: input.proteinPer100 ?? 0,
       carbPer100: input.carbPer100 ?? 0,
       fatPer100: input.fatPer100 ?? 0,
+      costPer100: input.costPer100 ?? null,
+      preferenceScore: input.preferenceScore ?? 3,
       benefits: input.benefits ?? null,
       cautionNote: input.cautionNote ?? null,
       conditionTags: input.conditionTags ?? [],
@@ -147,6 +172,8 @@ export interface UpdateFoodInput {
   proteinPer100?: number;
   carbPer100?: number;
   fatPer100?: number;
+  costPer100?: number | null;
+  preferenceScore?: number;
   benefits?: string | null;
   cautionNote?: string | null;
   conditionTags?: FoodConditionTag[];
@@ -171,6 +198,8 @@ export async function updateFood(prisma: PrismaClient, id: string, input: Update
       ...(input.proteinPer100 !== undefined ? { proteinPer100: input.proteinPer100 } : {}),
       ...(input.carbPer100 !== undefined ? { carbPer100: input.carbPer100 } : {}),
       ...(input.fatPer100 !== undefined ? { fatPer100: input.fatPer100 } : {}),
+      ...(input.costPer100 !== undefined ? { costPer100: input.costPer100 } : {}),
+      ...(input.preferenceScore !== undefined ? { preferenceScore: input.preferenceScore } : {}),
       ...(input.benefits !== undefined ? { benefits: input.benefits } : {}),
       ...(input.cautionNote !== undefined ? { cautionNote: input.cautionNote } : {}),
       ...(input.conditionTags !== undefined ? { conditionTags: input.conditionTags } : {}),

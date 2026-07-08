@@ -133,7 +133,14 @@ model ReportEmailLog {
   @@index([patientId])
 }
 
-// Staff accounts for login + role-based access control.
+// Staff accounts for login + role-based access control. Self-registration
+// (POST /api/auth/register) creates a row here with status='pending' and
+// role='dieu_duong' (lowest privilege, never admin) — requireAuth refuses to
+// log a pending account in, same as a 'disabled' one, until an admin reviews
+// it via PATCH /api/users/:id and flips status to 'active' (optionally
+// changing role first). This replaces the old plain isActive boolean so
+// "awaiting approval" and "explicitly deactivated by an admin" are two
+// distinct, unambiguous states instead of both just meaning isActive=false.
 model User {
   id           String   @id @default(cuid())
   createdAt    DateTime @default(now())
@@ -142,7 +149,7 @@ model User {
   email        String   @unique
   passwordHash String
   role         String // 'admin' | 'bac_si' | 'dieu_duong' — validated via zod at the API boundary, not a Postgres enum
-  isActive     Boolean  @default(true)
+  status       String   @default("active") // 'pending' | 'active' | 'disabled' — validated via zod at the API boundary, not a Postgres enum
 }
 
 // Growth-reference median lookup (WFA/HFA), separated from code so it can be
@@ -164,10 +171,13 @@ model GrowthStandardPoint {
 }
 
 // Doctor-editable food reference list: nutrition figures, benefits, and
-// disease-contraindication tags. A subset of ~20 rows (isSystemDefault) also
-// back menu.service.ts's dish-keyword nutrition lookup (see food.service.ts),
-// so editing one changes the generated weekly menu — those rows can be
-// edited but not deleted through the UI/API.
+// disease-contraindication tags. Also the live candidate pool for
+// menu-optimizer.service.ts's weekly-menu generation (see that file) —
+// costPer100/preferenceScore feed its 3-way nutrition/cost/preference
+// scoring. A subset of rows (isSystemDefault) is bundled as bootstrap data
+// (food-composition.data.ts) so the optimizer always has enough candidates
+// per food group even on a fresh install — those rows can be edited but not
+// deleted through the UI/API.
 model Food {
   id              String   @id @default(cuid())
   createdAt       DateTime @default(now())
@@ -178,6 +188,16 @@ model Food {
   proteinPer100   Float    @default(0)
   carbPer100      Float    @default(0)
   fatPer100       Float    @default(0)
+  // VNĐ per 100g/100ml — nullable because most staff won't have real prices
+  // on day one. Null is treated as "unknown", never as "free": the optimizer
+  // gives it a neutral mid-score rather than penalizing or favoring it, so
+  // cost only actually influences ranking once real prices are entered.
+  costPer100      Float?
+  // 1 (rarely eaten/liked) – 5 (very popular) — a doctor's own judgment of
+  // how well local families take to this food, one of the 3 equally-weighted
+  // scoring axes in menu-optimizer.service.ts. Defaults to 3 (neutral) so an
+  // unrated food is never penalized relative to a rated-average one.
+  preferenceScore Int      @default(3)
   benefits        String?
   cautionNote     String?
   conditionTags   String[] // subset of FOOD_CONDITION_TAGS (@dinhduong/shared)

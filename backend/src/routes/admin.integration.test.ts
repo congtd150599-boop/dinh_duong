@@ -114,7 +114,7 @@ describe('GET /api/admin/audit-log', () => {
 
   it('user.update summary shows old → new role/status, not a generic message', async () => {
     const target = await agent.post('/api/users').send({ name: 'Test Target', email: 'target@test.local', password: 'Test1234!', role: 'dieu_duong' });
-    await agent.patch(`/api/users/${target.body.id}`).send({ role: 'bac_si', isActive: false });
+    await agent.patch(`/api/users/${target.body.id}`).send({ role: 'bac_si', status: 'disabled' });
 
     const res = await agent.get('/api/admin/audit-log');
     const entry = res.body.find((e: { action: string }) => e.action === 'user.update');

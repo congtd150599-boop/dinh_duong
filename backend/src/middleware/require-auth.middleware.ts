@@ -43,7 +43,15 @@ export function buildRequireAuth(prisma: PrismaClient): RequestHandler {
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user || !user.isActive) {
+    if (!user) {
+      res.status(401).json({ error: 'Tài khoản không tồn tại hoặc đã bị vô hiệu hóa' });
+      return;
+    }
+    if (user.status === 'pending') {
+      res.status(401).json({ error: 'Tài khoản đang chờ quản trị viên phê duyệt' });
+      return;
+    }
+    if (user.status !== 'active') {
       res.status(401).json({ error: 'Tài khoản không tồn tại hoặc đã bị vô hiệu hóa' });
       return;
     }

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 const roleSchema = z.enum(['admin', 'bac_si', 'dieu_duong']);
+const statusSchema = z.enum(['pending', 'active', 'disabled']);
 
 export const createUserSchema = z.object({
   name: z.string().trim().min(1, 'name is required'),
@@ -13,9 +14,9 @@ export const updateUserSchema = z
   .object({
     name: z.string().trim().min(1).optional(),
     role: roleSchema.optional(),
-    isActive: z.boolean().optional(),
+    status: statusSchema.optional(),
   })
-  .refine((v) => v.name !== undefined || v.role !== undefined || v.isActive !== undefined, {
+  .refine((v) => v.name !== undefined || v.role !== undefined || v.status !== undefined, {
     message: 'Cần ít nhất một trường để cập nhật',
   });
 

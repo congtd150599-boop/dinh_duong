@@ -70,20 +70,20 @@ describe('POST /api/users (create)', () => {
 });
 
 describe('PATCH /api/users/:id (update)', () => {
-  it('updates role and isActive', async () => {
+  it('updates role and status', async () => {
     const created = await adminAgent
       .post('/api/users')
       .send({ name: 'Bác sĩ X', email: 'bacsi.x@test.local', password: 'Password123!', role: 'bac_si' });
 
-    const res = await adminAgent.patch(`/api/users/${created.body.id}`).send({ isActive: false });
+    const res = await adminAgent.patch(`/api/users/${created.body.id}`).send({ status: 'disabled' });
     expect(res.status).toBe(200);
-    expect(res.body.isActive).toBe(false);
+    expect(res.body.status).toBe('disabled');
   });
 
   it('cannot deactivate the last remaining active admin', async () => {
     // adminAgent's own account is the only active admin in this fresh test DB.
     const me = await adminAgent.get('/api/auth/me');
-    const res = await adminAgent.patch(`/api/users/${me.body.user.id}`).send({ isActive: false });
+    const res = await adminAgent.patch(`/api/users/${me.body.user.id}`).send({ status: 'disabled' });
     expect(res.status).toBe(400);
   });
 
@@ -91,7 +91,7 @@ describe('PATCH /api/users/:id (update)', () => {
     const me = await adminAgent.get('/api/auth/me');
     await adminAgent.post('/api/users').send({ name: 'Admin 2', email: 'admin2@test.local', password: 'Password123!', role: 'admin' });
 
-    const res = await adminAgent.patch(`/api/users/${me.body.user.id}`).send({ isActive: false });
+    const res = await adminAgent.patch(`/api/users/${me.body.user.id}`).send({ status: 'disabled' });
     expect(res.status).toBe(400);
   });
 
@@ -100,13 +100,13 @@ describe('PATCH /api/users/:id (update)', () => {
       .post('/api/users')
       .send({ name: 'Admin 2', email: 'admin2b@test.local', password: 'Password123!', role: 'admin' });
 
-    const res = await adminAgent.patch(`/api/users/${other.body.id}`).send({ isActive: false });
+    const res = await adminAgent.patch(`/api/users/${other.body.id}`).send({ status: 'disabled' });
     expect(res.status).toBe(200);
-    expect(res.body.isActive).toBe(false);
+    expect(res.body.status).toBe('disabled');
   });
 
   it('unknown id → 404', async () => {
-    const res = await adminAgent.patch('/api/users/does-not-exist').send({ isActive: false });
+    const res = await adminAgent.patch('/api/users/does-not-exist').send({ status: 'disabled' });
     expect(res.status).toBe(404);
   });
 });
