@@ -268,4 +268,35 @@ describe('POST /api/patients/:id/send-report', () => {
     const res = await agent.post(`/api/patients/${created.body.id}/send-report`).send({});
     expect(res.status).toBe(400);
   });
+
+  it('successful send writes a ReportEmailLog row, visible via GET /api/children/:id/history', async () => {
+    const created = await agent.post('/api/patients').send(validInput);
+    await agent.post(`/api/patients/${created.body.id}/send-report`).send({ pdfBase64 });
+
+    const history = await agent.get(`/api/children/${created.body.childId}/history`);
+    expect(history.body.reportLogs).toHaveLength(1);
+    expect(history.body.reportLogs[0]).toMatchObject({
+      patientId: created.body.id,
+      recipientEmail: 'me@test.local',
+      recipientName: 'Test Mẹ',
+      status: 'sent',
+      errorMessage: null,
+    });
+  });
+
+  it('sendEmail failure writes a "failed" ReportEmailLog row with the error message', async () => {
+    sendEmailMock.mockRejectedValueOnce(new Error('SMTP down'));
+    const created = await agent.post('/api/patients').send(validInput);
+    const res = await agent.post(`/api/patients/${created.body.id}/send-report`).send({ pdfBase64 });
+
+    expect(res.status).toBe(502);
+
+    const history = await agent.get(`/api/children/${created.body.childId}/history`);
+    expect(history.body.reportLogs).toHaveLength(1);
+    expect(history.body.reportLogs[0]).toMatchObject({
+      recipientEmail: 'me@test.local',
+      status: 'failed',
+      errorMessage: 'SMTP down',
+    });
+  });
 });

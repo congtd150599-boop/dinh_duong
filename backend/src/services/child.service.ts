@@ -6,6 +6,7 @@ import {
   type Gender,
   type GrowthAlert,
   type GuardianRecord,
+  type ReportEmailLogRecord,
   type VisitPoint,
 } from '@dinhduong/shared';
 import { getGuardiansForChild, hasQualifyingGuardian } from './guardian.service';
@@ -105,16 +106,34 @@ export interface ChildHistory {
   visits: ChildHistoryVisit[];
   /** Keyed by visit id — plain object, not a Map, so it survives JSON.stringify over HTTP. */
   alerts: Record<string, GrowthAlert[]>;
+  /** Every report-email send attempt for this child across all visits, most recent first — see ReportEmailLog. */
+  reportLogs: ReportEmailLogRecord[];
 }
 
 export async function getChildHistory(prisma: PrismaClient, childId: string): Promise<ChildHistory | null> {
   const child = await prisma.child.findUnique({ where: { id: childId } });
   if (!child) return null;
 
-  const [patients, guardians] = await Promise.all([
+  const [patients, guardians, reportLogRows] = await Promise.all([
     prisma.patient.findMany({ where: { childId }, orderBy: { examDate: 'asc' } }),
     getGuardiansForChild(prisma, childId),
+    prisma.reportEmailLog.findMany({
+      where: { childId },
+      orderBy: { sentAt: 'desc' },
+      include: { patient: { select: { examDate: true } } },
+    }),
   ]);
+
+  const reportLogs: ReportEmailLogRecord[] = reportLogRows.map((r) => ({
+    id: r.id,
+    patientId: r.patientId,
+    examDate: r.patient.examDate.toISOString(),
+    recipientEmail: r.recipientEmail,
+    recipientName: r.recipientName,
+    status: r.status as ReportEmailLogRecord['status'],
+    errorMessage: r.errorMessage,
+    sentAt: r.sentAt.toISOString(),
+  }));
 
   const visits: ChildHistoryVisit[] = patients.map((p) => {
     const fullResult = p.fullResult as unknown as AssessmentResult;
@@ -133,5 +152,5 @@ export async function getChildHistory(prisma: PrismaClient, childId: string): Pr
 
   const lastExamDate = visits.length > 0 ? new Date(visits[visits.length - 1].examDate) : null;
 
-  return { child: toChildRecord(child, lastExamDate, hasQualifyingGuardian(guardians)), guardians, visits, alerts };
+  return { child: toChildRecord(child, lastExamDate, hasQualifyingGuardian(guardians)), guardians, visits, alerts, reportLogs };
 }

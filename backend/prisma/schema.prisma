@@ -32,6 +32,8 @@ model Patient {
   childId String
   child   Child  @relation(fields: [childId], references: [id])
 
+  reportEmailLogs ReportEmailLog[]
+
   // raw optional lab inputs
   labCa        Float?
   labVitD      Float?
@@ -77,6 +79,7 @@ model Child {
   gender    String // 'Nam' | 'Nữ'
   patients  Patient[]
   guardians Guardian[]
+  reportEmailLogs ReportEmailLog[]
 
   @@index([name])
 }
@@ -102,6 +105,32 @@ model Guardian {
   phone        String?
 
   @@unique([childId, relationship])
+}
+
+// One row per email-send attempt for a patient's PDF report (see
+// report.service.ts's sendPatientReportEmail) — lets staff answer "did we
+// already send this family a report, and did it succeed?" (previously
+// send-and-forget, no record kept). recipientEmail/recipientName are
+// snapshotted at send time rather than read live off Guardian, since the
+// guardian's contact info can change afterward and the log should reflect
+// who it actually went to. guardianId is NOT a relation (no FK) — a
+// guardian row can later be edited or removed without needing to touch
+// historical log rows.
+model ReportEmailLog {
+  id             String   @id @default(cuid())
+  sentAt         DateTime @default(now())
+  patientId      String
+  patient        Patient  @relation(fields: [patientId], references: [id])
+  childId        String
+  child          Child    @relation(fields: [childId], references: [id])
+  guardianId     String?
+  recipientEmail String
+  recipientName  String?
+  status         String // 'sent' | 'failed' — validated in code, not a Postgres enum (same convention as other string-enum fields in this schema)
+  errorMessage   String?
+
+  @@index([childId])
+  @@index([patientId])
 }
 
 // Staff accounts for login + role-based access control.

@@ -47,8 +47,29 @@ export async function sendPatientReportEmail(prisma: PrismaClient, patientId: st
     try {
       await sendEmail(guardian.email!, subject, html, [{ filename, content: pdfBuffer }]);
       sentTo.push(guardian.email!);
+      await prisma.reportEmailLog.create({
+        data: {
+          patientId,
+          childId: patient.childId,
+          guardianId: guardian.id,
+          recipientEmail: guardian.email!,
+          recipientName: guardian.name,
+          status: 'sent',
+        },
+      });
     } catch (err) {
       console.error(`[send-report] Gửi báo cáo thất bại cho bệnh nhân ${patientId} (${guardian.relationship}):`, err);
+      await prisma.reportEmailLog.create({
+        data: {
+          patientId,
+          childId: patient.childId,
+          guardianId: guardian.id,
+          recipientEmail: guardian.email!,
+          recipientName: guardian.name,
+          status: 'failed',
+          errorMessage: err instanceof Error ? err.message : String(err),
+        },
+      });
     }
   }
 

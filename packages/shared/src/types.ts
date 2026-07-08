@@ -62,6 +62,20 @@ export interface GuardianRecord {
   phone: string | null;
 }
 
+export type ReportEmailStatus = 'sent' | 'failed';
+
+/** Wire shape of one email-send attempt for a patient's PDF report, as returned by /api/children/:id/history — see ReportEmailLog. */
+export interface ReportEmailLogRecord {
+  id: string;
+  patientId: string;
+  examDate: string; // the visit's exam date, snapshotted here so the UI doesn't need a second lookup per row
+  recipientEmail: string;
+  recipientName: string | null;
+  status: ReportEmailStatus;
+  errorMessage: string | null;
+  sentAt: string;
+}
+
 export interface AssessmentInput {
   name: string;
   dob: string; // ISO date

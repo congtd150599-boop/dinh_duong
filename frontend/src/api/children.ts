@@ -1,4 +1,4 @@
-import type { ChildRecord, GuardianInput, GuardianRecord, GrowthAlert } from '@dinhduong/shared';
+import type { ChildRecord, GuardianInput, GuardianRecord, GrowthAlert, ReportEmailLogRecord } from '@dinhduong/shared';
 import { apiClient } from './client';
 
 export function searchChildren(query: string): Promise<ChildRecord[]> {
@@ -19,6 +19,7 @@ export interface ChildHistory {
   guardians: GuardianRecord[];
   visits: ChildHistoryVisit[];
   alerts: Record<string, GrowthAlert[]>;
+  reportLogs: ReportEmailLogRecord[];
 }
 
 export function getChildHistory(childId: string): Promise<ChildHistory> {

@@ -119,6 +119,46 @@ export function ChildHistoryPanel({ childId, onBack, autoEditContact }: ChildHis
                 </table>
               </div>
             </Card>
+
+            <Card icon="📧" iconBg="#E1F5FE" title="Báo Cáo Đã Gửi">
+              {history.reportLogs.length === 0 ? (
+                <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Chưa gửi báo cáo nào cho trẻ này.</p>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Ngày gửi</th>
+                        <th>Lần khám</th>
+                        <th>Gửi tới</th>
+                        <th>Trạng thái</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {history.reportLogs.map((log) => (
+                        <tr key={log.id}>
+                          <td>{new Date(log.sentAt).toLocaleString('vi-VN')}</td>
+                          <td>{log.examDate.slice(0, 10)}</td>
+                          <td>
+                            {log.recipientName ? `${log.recipientName} — ` : ''}
+                            {log.recipientEmail}
+                          </td>
+                          <td>
+                            {log.status === 'sent' ? (
+                              <span style={{ color: 'var(--success)' }}>✅ Đã gửi</span>
+                            ) : (
+                              <span style={{ color: 'var(--danger)' }} title={log.errorMessage ?? undefined}>
+                                ❌ Thất bại
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Card>
           </div>
         </>
       )}

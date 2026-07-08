@@ -6,5 +6,7 @@ export const testPrisma = new PrismaClient({
 });
 
 export async function truncateAllTables(): Promise<void> {
-  await testPrisma.$executeRawUnsafe('TRUNCATE TABLE "Patient", "Guardian", "Child", "GrowthStandardPoint", "User", "Food" RESTART IDENTITY CASCADE;');
+  await testPrisma.$executeRawUnsafe(
+    'TRUNCATE TABLE "Patient", "Guardian", "Child", "ReportEmailLog", "GrowthStandardPoint", "User", "Food" RESTART IDENTITY CASCADE;',
+  );
 }

@@ -1,5 +1,17 @@
 /* PDF EXPORT STYLES */
-#pdf-template {
+
+/* Host for the portaled capture templates (see pdfCaptureRoot.ts) — fixed +
+   off-screen rather than display:none so html2canvas still gets real layout
+   to capture, but it's never visible in the viewport regardless of which
+   template inside is toggled on. */
+#pdf-capture-root {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  pointer-events: none;
+}
+
+.pdf-capture-template {
   display: none;
   font-family: 'Inter', Arial, sans-serif;
   color: #212121;
