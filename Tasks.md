@@ -69,3 +69,14 @@
 - [ ] Chữ ký số bác sĩ trên phiếu kết quả (giá trị pháp lý hồ sơ bệnh án điện tử)
 - [ ] Multi-tenant SaaS cho chuỗi phòng khám
 - [ ] Tuân thủ Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân (đặc biệt nhạy cảm vì là dữ liệu trẻ em + sức khoẻ)
+
+## Tầng 4 — Public hóa thành website thương mại (kiếm traffic, kiếm tiền qua quảng cáo)
+
+> Bối cảnh: user cân nhắc biến app từ công cụ nội bộ phòng khám thành website công khai, kiếm tiền qua traffic/quảng cáo (đã chốt: **miễn phí hoàn toàn cho mọi người dùng**, không có tầng trả phí). Đây là thay đổi kiến trúc lớn — không chỉ thêm 1 role, vì toàn bộ hệ thống hiện tại giả định user là nhân viên phòng khám dùng chung 1 danh sách bệnh nhân.
+
+- [ ] Mở public route công cụ đánh giá dinh dưỡng (Nhập Liệu → Kết Quả) — không bắt đăng nhập mới xem/dùng được, vì đây là nội dung kéo traffic/SEO chính; bắt đăng nhập ngay từ đầu sẽ giết organic traffic
+- [ ] Thêm role mới **"Phụ huynh"** — free, tự đăng ký và dùng được ngay (khác luồng "tự đăng ký + admin duyệt" hiện có cho nhân viên phòng khám), chỉ dùng để lưu lại lịch sử nhiều lần khám của con mình + nhận nhắc lịch tái khám qua email, không thấy được dữ liệu của phụ huynh khác
+- [ ] Thêm khái niệm "chủ sở hữu" vào model `Child` (hiện chưa có — `userId` hoặc tương đương) + sửa authorization ở toàn bộ route đọc/ghi dữ liệu trẻ để chỉ chủ sở hữu (và staff vận hành) truy cập được — đây là phần sửa động nhất, không phải chỉ thêm 1 role là xong
+- [ ] Thu hẹp phạm vi 3 role hiện có (admin/bác sĩ/điều dưỡng) từ "nhân viên phòng khám quản bệnh nhân" thành "đội vận hành sản phẩm" (quản lý DB thực phẩm, chuẩn tăng trưởng WHO, audit log, backup) — vì không còn 1 phòng khám cụ thể nữa mà là hàng nghìn phụ huynh ẩn danh dùng chung sản phẩm
+- [ ] Rate-limiting / chống lạm dụng cho các route public không cần đăng nhập — hiện tại chưa có cơ chế nào, rủi ro bot quét/spam làm tốn chi phí SMTP (nhắc lịch tái khám, gửi báo cáo) và DB
+- [ ] Nâng độ ưu tiên của "Tuân thủ Nghị định 13/2023/NĐ-CP" (mục ở Tầng 3) lên **bắt buộc trước khi public**, không còn là "để sau" — vì lúc này là thu thập dữ liệu sức khỏe trẻ em từ công chúng ở quy mô lớn, cần cơ chế consent rõ ràng lúc đăng ký + cho phụ huynh tự yêu cầu xóa dữ liệu của con mình
