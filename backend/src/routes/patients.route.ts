@@ -1,6 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
 import { Router } from 'express';
 import { requireRole } from '../middleware/require-auth.middleware';
+import { recordAudit } from '../services/audit-log.service';
 import { GuardianServiceError } from '../services/guardian.service';
 import { createPatient, deletePatient, exportPatientsCsv, getPatient, listPatients, PatientServiceError } from '../services/patient.service';
 import { ReportServiceError, sendPatientReportEmail } from '../services/report.service';
@@ -21,6 +22,13 @@ export function buildPatientsRouter(prisma: PrismaClient): Router {
       }
       try {
         const patient = await createPatient(prisma, parsed.data);
+        await recordAudit(prisma, {
+          user: req.user!,
+          action: 'patient.create',
+          targetType: 'Patient',
+          targetId: patient.id,
+          summary: `Tạo hồ sơ bệnh nhân "${patient.name}" (khám ngày ${patient.examDate.toISOString().slice(0, 10)})`,
+        });
         res.status(201).json(patient);
       } catch (err) {
         if (err instanceof PatientServiceError || err instanceof GuardianServiceError) {
@@ -99,6 +107,13 @@ export function buildPatientsRouter(prisma: PrismaClient): Router {
         res.status(404).json({ error: 'Not found' });
         return;
       }
+      await recordAudit(prisma, {
+        user: req.user!,
+        action: 'patient.delete',
+        targetType: 'Patient',
+        targetId: deleted.id,
+        summary: `Xoá bệnh nhân "${deleted.name}" (khám ngày ${deleted.examDate.toISOString().slice(0, 10)})`,
+      });
       res.status(204).send();
     }),
   );

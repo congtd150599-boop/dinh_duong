@@ -14,7 +14,10 @@ RUN npm run build
 
 FROM node:20-alpine AS runtime
 
-RUN apk add --no-cache openssl
+# postgresql16-client provides pg_dump, used by backup.service.ts for the
+# scheduled/on-demand DB backup job — version-matched to the postgres:16-alpine
+# image in docker-compose.
+RUN apk add --no-cache openssl postgresql16-client
 WORKDIR /app
 
 ENV NODE_ENV=production

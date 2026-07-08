@@ -1,5 +1,6 @@
 import { createApp } from './app';
 import { prisma } from './db/prisma';
+import { startBackupJob } from './jobs/backup.job';
 import { startRevisitReminderJob } from './jobs/revisit-reminder.job';
 import { bootstrapAdminIfNeeded } from './services/auth.service';
 import { ensureSystemDefaultsSeeded, loadFromDatabase as loadFoodsFromDatabase } from './services/food.service';
@@ -24,6 +25,7 @@ async function main() {
 
   await bootstrapAdminIfNeeded(prisma);
   startRevisitReminderJob(prisma);
+  startBackupJob();
 
   app.listen(port, () => {
     console.log(`Backend listening on port ${port}`);

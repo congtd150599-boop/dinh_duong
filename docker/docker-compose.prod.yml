@@ -33,6 +33,11 @@ services:
         condition: service_healthy
     # No bind mounts, no host port mapping — only the frontend's Nginx
     # (proxying /api/) and other containers on this network can reach it.
+    # `backups` is a SEPARATE named volume from `pgdata_prod` on purpose — a
+    # backup that shared fate with the database it's backing up (e.g. both
+    # lost if the same volume were deleted) would defeat the point of having one.
+    volumes:
+      - backups:/app/backend/backups
 
   frontend:
     build:
@@ -46,3 +51,4 @@ services:
 
 volumes:
   pgdata_prod:
+  backups:

@@ -181,13 +181,14 @@ export async function updateFood(prisma: PrismaClient, id: string, input: Update
   return toRecord(food);
 }
 
-export async function deleteFood(prisma: PrismaClient, id: string): Promise<boolean> {
+/** Returns the deleted food (for the caller to build an audit-log summary from), or null if no such food existed. */
+export async function deleteFood(prisma: PrismaClient, id: string) {
   const target = await prisma.food.findUnique({ where: { id } });
-  if (!target) return false;
+  if (!target) return null;
   if (target.isSystemDefault) {
     throw new FoodServiceError('Không thể xoá thực phẩm hệ thống dùng để sinh thực đơn tuần — chỉ có thể chỉnh sửa', 400);
   }
   await prisma.food.delete({ where: { id } });
   await loadFromDatabase(prisma);
-  return true;
+  return target;
 }

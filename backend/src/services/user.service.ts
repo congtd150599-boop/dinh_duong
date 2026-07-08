@@ -89,9 +89,11 @@ export async function updateUser(prisma: PrismaClient, targetId: string, actorId
   return toRecord(user);
 }
 
-export async function resetPassword(prisma: PrismaClient, targetId: string, newPassword: string): Promise<void> {
+/** Returns the target user (for the caller to build an audit-log summary from). */
+export async function resetPassword(prisma: PrismaClient, targetId: string, newPassword: string): Promise<UserRecord> {
   const target = await prisma.user.findUnique({ where: { id: targetId } });
   if (!target) throw new UserServiceError('Không tìm thấy người dùng', 404);
   const passwordHash = await hashPassword(newPassword);
-  await prisma.user.update({ where: { id: targetId }, data: { passwordHash } });
+  const updated = await prisma.user.update({ where: { id: targetId }, data: { passwordHash } });
+  return toRecord(updated);
 }

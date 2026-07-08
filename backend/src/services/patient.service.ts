@@ -114,12 +114,12 @@ export async function getPatient(prisma: PrismaClient, id: string) {
   return { ...p, hasQualifyingGuardian: child.guardians.some((g) => !!g.email && !!g.phone) };
 }
 
-export async function deletePatient(prisma: PrismaClient, id: string): Promise<boolean> {
+/** Returns the deleted row (for the caller to build an audit-log summary from) or null if no such patient existed. */
+export async function deletePatient(prisma: PrismaClient, id: string) {
   try {
-    await prisma.patient.delete({ where: { id } });
-    return true;
+    return await prisma.patient.delete({ where: { id } });
   } catch {
-    return false;
+    return null;
   }
 }
 

@@ -1,6 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
 import express, { Router } from 'express';
 import { requireRole } from '../middleware/require-auth.middleware';
+import { recordAudit } from '../services/audit-log.service';
 import {
   exportGrowthStandardsCsv,
   GrowthStandardsImportError,
@@ -37,6 +38,12 @@ export function buildGrowthStandardsRouter(prisma: PrismaClient): Router {
       try {
         const records = parseGrowthStandardsCsv(req.body);
         const count = await importGrowthStandards(prisma, records);
+        await recordAudit(prisma, {
+          user: req.user!,
+          action: 'growth_standards.import',
+          targetType: 'GrowthStandardPoint',
+          summary: `Nhập CSV chuẩn tăng trưởng: ${count} dòng (thay thế toàn bộ dữ liệu cũ)`,
+        });
         res.json({ imported: count });
       } catch (err) {
         if (err instanceof GrowthStandardsImportError) {

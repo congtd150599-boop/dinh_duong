@@ -184,3 +184,26 @@ model Food {
   source          String?
   isSystemDefault Boolean  @default(false)
 }
+
+// One row per mutating action taken by a logged-in staff member (create/
+// update/delete across Patient/Guardian/User/Food/GrowthStandardPoint) —
+// accountability trail for "who changed what, when". userId is NOT a
+// relation (no FK) — deleting a User must never be blocked by, or cascade
+// into, their historical audit rows; userName/userEmail are snapshotted at
+// write time so entries stay meaningful even if the account is later
+// renamed or removed. Written best-effort (see audit-log.service.ts) —
+// a logging failure must never block the real mutation it's describing.
+model AuditLog {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  userId     String?
+  userName   String
+  userEmail  String
+  action     String // e.g. 'patient.create', 'user.reset_password' — free-form dot-namespaced, not a Postgres enum (same convention as other string-enum fields in this schema)
+  targetType String // 'Patient' | 'Guardian' | 'User' | 'Food' | 'GrowthStandardPoint'
+  targetId   String?
+  summary    String // human-readable one-liner shown in the audit log UI, e.g. 'Xoá bệnh nhân "Nguyễn Văn A"'
+
+  @@index([createdAt])
+  @@index([userId])
+}

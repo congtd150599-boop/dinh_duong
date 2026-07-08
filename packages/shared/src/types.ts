@@ -265,3 +265,65 @@ export interface ChildRecord {
   /** True if at least one Guardian (Bố or Mẹ) has both email and phone on file — cheap summary for search results/list views that don't need the full guardian list. */
   hasQualifyingGuardian: boolean;
 }
+
+/** One calendar month's worth of visits, bucketed by Patient.examDate — see clinic-stats.service.ts. */
+export interface MonthlyNutritionStat {
+  month: string; // 'YYYY-MM'
+  total: number;
+  sddCount: number;
+  overweightCount: number;
+  normalCount: number;
+  sddPct: number;
+  overweightPct: number;
+  normalPct: number;
+}
+
+export type InterventionOutcome = 'improved' | 'unchanged' | 'worsened';
+
+/** Per-child first-visit-vs-latest-visit comparison — see clinic-stats.service.ts for how `outcome` is derived from wfh severity. */
+export interface InterventionDetail {
+  childId: string;
+  childName: string;
+  firstExamDate: string;
+  firstStatus: string;
+  lastExamDate: string;
+  lastStatus: string;
+  outcome: InterventionOutcome;
+}
+
+/** Aggregate "did status get closer to Bình thường between a child's first and most recent visit" stats, computed only over children with 2+ visits. */
+export interface InterventionEffectivenessStats {
+  totalChildrenWithMultipleVisits: number;
+  improved: number;
+  unchanged: number;
+  worsened: number;
+  improvedPct: number;
+  unchangedPct: number;
+  worsenedPct: number;
+  details: InterventionDetail[];
+}
+
+export interface ClinicStatsReport {
+  monthly: MonthlyNutritionStat[];
+  intervention: InterventionEffectivenessStats;
+}
+
+/** Wire shape of one AuditLog row, as returned by GET /api/admin/audit-log. */
+export interface AuditLogRecord {
+  id: string;
+  createdAt: string;
+  userId: string | null;
+  userName: string;
+  userEmail: string;
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  summary: string;
+}
+
+/** One backup file on disk, as returned by GET /api/admin/backups. */
+export interface BackupFileRecord {
+  fileName: string;
+  sizeBytes: number;
+  createdAt: string;
+}

@@ -1,11 +1,19 @@
 import type { Role, UserRecord } from '@dinhduong/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { triggerBackup } from '../../api/admin';
 import { createUser, listUsers, resetPassword, updateUser, type CreateUserInput } from '../../api/users';
 import { ApiError } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useAuditLogs, useBackups } from '../../hooks/useAdmin';
 import { Card } from '../shared/Card';
 import { useToast } from '../shared/ToastContext';
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 const ROLE_LABELS: Record<Role, string> = {
   admin: 'Quản trị viên',
@@ -80,7 +88,7 @@ export function UsersTab() {
         Tạo tài khoản, phân quyền, vô hiệu hóa/kích hoạt và đặt lại mật khẩu cho nhân viên phòng khám.
       </p>
 
-      <div className="grid-2" style={{ gap: 20, alignItems: 'start' }}>
+      <div className="grid-list-form" style={{ alignItems: 'start' }}>
         <Card icon="📋" iconBg="#E3F2FD" title="Danh sách người dùng">
           {isLoading ? (
             <p>Đang tải...</p>
@@ -89,10 +97,10 @@ export function UsersTab() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Tên</th>
-                    <th>Email</th>
-                    <th>Vai trò</th>
-                    <th>Trạng thái</th>
+                    <th style={{ whiteSpace: 'nowrap' }}>Tên</th>
+                    <th style={{ whiteSpace: 'nowrap' }}>Email</th>
+                    <th style={{ whiteSpace: 'nowrap' }}>Vai trò</th>
+                    <th style={{ whiteSpace: 'nowrap' }}>Trạng thái</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -104,6 +112,7 @@ export function UsersTab() {
                       <td>
                         <select
                           className="form-control"
+                          style={{ minWidth: 150 }}
                           value={u.role}
                           disabled={u.id === me?.id}
                           onChange={(e) => handleRoleChange(u, e.target.value as Role)}
@@ -118,6 +127,8 @@ export function UsersTab() {
                       <td>
                         <span
                           style={{
+                            display: 'inline-block',
+                            whiteSpace: 'nowrap',
                             fontSize: 12,
                             fontWeight: 600,
                             padding: '3px 8px',
@@ -130,12 +141,17 @@ export function UsersTab() {
                         </span>
                       </td>
                       <td>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button className="btn-secondary" onClick={() => handleResetPassword(u)}>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button
+                            className="btn-secondary"
+                            style={{ padding: '8px 14px', fontSize: 12, whiteSpace: 'nowrap' }}
+                            onClick={() => handleResetPassword(u)}
+                          >
                             🔑 Đặt lại mật khẩu
                           </button>
                           <button
                             className={u.isActive ? 'btn-danger' : 'btn-secondary'}
+                            style={{ padding: '8px 14px', fontSize: 12, whiteSpace: 'nowrap' }}
                             disabled={u.id === me?.id}
                             onClick={() => handleToggleActive(u)}
                           >
@@ -206,6 +222,117 @@ export function UsersTab() {
           </form>
         </Card>
       </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginTop: 20 }}>
+        <BackupCard />
+        <AuditLogCard />
+      </div>
     </div>
+  );
+}
+
+function BackupCard() {
+  const { showToast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: backups, isLoading } = useBackups();
+
+  const backupMutation = useMutation({
+    mutationFn: triggerBackup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'backups'] });
+      showToast('✅ Đã sao lưu dữ liệu.', 'success');
+    },
+    onError: (err) => {
+      const message = err instanceof ApiError ? ((err.details as { error?: string })?.error ?? 'Sao lưu thất bại') : 'Sao lưu thất bại';
+      showToast(message, 'error');
+    },
+  });
+
+  return (
+    <Card
+      icon="🗄️"
+      iconBg="#E1F5FE"
+      title="Sao Lưu Dữ Liệu"
+      extra={
+        <button
+          className="btn-secondary"
+          style={{ marginLeft: 'auto' }}
+          onClick={() => backupMutation.mutate()}
+          disabled={backupMutation.isPending}
+        >
+          {backupMutation.isPending ? 'Đang sao lưu...' : '💾 Sao Lưu Ngay'}
+        </button>
+      }
+    >
+      <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
+        Tự động sao lưu toàn bộ dữ liệu hằng ngày, giữ lại các bản gần nhất (bản cũ hơn thời hạn tự động xoá).
+      </p>
+      {isLoading ? (
+        <p>Đang tải...</p>
+      ) : (backups ?? []).length === 0 ? (
+        <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Chưa có bản sao lưu nào.</p>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Tên tệp</th>
+                <th>Dung lượng</th>
+                <th>Thời điểm</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(backups ?? []).map((b) => (
+                <tr key={b.fileName}>
+                  <td>{b.fileName}</td>
+                  <td>{formatBytes(b.sizeBytes)}</td>
+                  <td>{new Date(b.createdAt).toLocaleString('vi-VN')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function AuditLogCard() {
+  const { data: logs, isLoading } = useAuditLogs();
+
+  return (
+    <Card icon="📜" iconBg="#F3E5F5" title="Nhật Ký Thao Tác">
+      <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12 }}>
+        200 thao tác ghi/sửa/xóa gần nhất trong hệ thống — bệnh nhân, người đại diện, tài khoản người dùng, thực phẩm, chuẩn tăng trưởng.
+      </p>
+      {isLoading ? (
+        <p>Đang tải...</p>
+      ) : (logs ?? []).length === 0 ? (
+        <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Chưa có thao tác nào được ghi nhận.</p>
+      ) : (
+        <div style={{ overflowX: 'auto', maxHeight: 480, overflowY: 'auto' }}>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th style={{ whiteSpace: 'nowrap' }}>Thời gian</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Người thực hiện</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Hành động</th>
+                <th>Mô tả</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(logs ?? []).map((l) => (
+                <tr key={l.id}>
+                  <td style={{ whiteSpace: 'nowrap' }}>{new Date(l.createdAt).toLocaleString('vi-VN')}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{l.userName}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{l.action}</td>
+                  <td>{l.summary}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
   );
 }

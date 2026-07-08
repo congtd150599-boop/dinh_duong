@@ -9,6 +9,7 @@ const BASE_TABS: { id: TabName; label: string; icon: string }[] = [
   { id: 'log', label: 'Nhật Ký BN', icon: '📁' },
   { id: 'growthStandards', label: 'Chuẩn Tăng Trưởng', icon: '📐' },
   { id: 'foods', label: 'Danh Sách Thực Phẩm', icon: '🍎' },
+  { id: 'reports', label: 'Báo Cáo Thống Kê', icon: '📈' },
 ];
 
 const COLLAPSED_STORAGE_KEY = 'sidebarCollapsed';

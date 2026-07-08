@@ -3,12 +3,14 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { Express, NextFunction, Request, Response } from 'express';
 import { buildRequireAuth, requireRole } from './middleware/require-auth.middleware';
+import { buildAdminRouter } from './routes/admin.route';
 import { assessmentsRouter } from './routes/assessments.route';
 import { buildAuthRouter } from './routes/auth.route';
 import { buildChildrenRouter } from './routes/children.route';
 import { buildFoodsRouter } from './routes/foods.route';
 import { buildGrowthStandardsRouter } from './routes/growth-standards.route';
 import { buildPatientsRouter } from './routes/patients.route';
+import { buildReportsRouter } from './routes/reports.route';
 import { buildUsersRouter } from './routes/users.route';
 
 export function createApp(prisma: PrismaClient): Express {
@@ -37,6 +39,8 @@ export function createApp(prisma: PrismaClient): Express {
   app.use('/api/growth-standards', requireAuth, buildGrowthStandardsRouter(prisma));
   app.use('/api/foods', requireAuth, buildFoodsRouter(prisma));
   app.use('/api/children', requireAuth, buildChildrenRouter(prisma));
+  app.use('/api/reports', requireAuth, buildReportsRouter(prisma));
+  app.use('/api/admin', requireAuth, requireRole('admin'), buildAdminRouter(prisma));
 
   // Central error handler — anything thrown/rejected in a route (via asyncHandler)
   // lands here instead of crashing the process or hanging the request.

@@ -3,7 +3,11 @@
 FROM node:20-alpine
 
 # Prisma's query/schema engine binaries need OpenSSL present on Alpine.
-RUN apk add --no-cache openssl
+# postgresql16-client provides pg_dump, used by backup.service.ts for the
+# scheduled/on-demand DB backup job — version-matched to the postgres:16-alpine
+# image in docker-compose so pg_dump's protocol stays compatible with the
+# server it's dumping.
+RUN apk add --no-cache openssl postgresql16-client
 
 WORKDIR /app
 

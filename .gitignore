@@ -8,3 +8,6 @@ backend/generated/
 frontend/coverage/
 backend/coverage/
 *.tsbuildinfo
+# Real DB dumps (patient PII) — see backup.service.ts. In dev this directory
+# lives inside the bind-mounted backend/ folder, so it must be excluded here.
+backend/backups/
