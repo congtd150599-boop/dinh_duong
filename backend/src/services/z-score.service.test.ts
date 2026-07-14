@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classifyZ, computeLmsZ } from './z-score.service';
+import { classifyBfaZ, classifyZ, computeLmsZ } from './z-score.service';
 
 describe('computeLmsZ — real WHO LMS formula (replaces the old flat-coefficient approximation)', () => {
   it('X exactly at the median (M) → Z = 0, for both the L≠0 and L=0 branches', () => {
@@ -42,11 +42,11 @@ describe('classifyZ — wfa boundaries', () => {
   it('z = -2.0 exactly → Bình thường (NOT Nhẹ cân)', () => {
     expect(classifyZ(-2.0, 'wfa')).toBe('Bình thường');
   });
-  it('z = 2.0 exactly → Bình thường (NOT Thừa cân)', () => {
+  it('z = 2.0 exactly → Bình thường', () => {
     expect(classifyZ(2.0, 'wfa')).toBe('Bình thường');
   });
-  it('z = 2.01 → Thừa cân', () => {
-    expect(classifyZ(2.01, 'wfa')).toBe('Thừa cân');
+  it('z = 2.01 → still Bình thường — WFA has no "Thừa cân" category (Bảng 1 chỉ định nghĩa CN/tuổi đi xuống, xem Bugs.md #4)', () => {
+    expect(classifyZ(2.01, 'wfa')).toBe('Bình thường');
   });
 });
 
@@ -95,5 +95,28 @@ describe('classifyZ — wfh boundaries', () => {
   });
   it('z = 3.01 → Béo phì', () => {
     expect(classifyZ(3.01, 'wfh')).toBe('Béo phì');
+  });
+});
+
+describe('classifyBfaZ — BMI-for-age, age-dependent SD cutoffs (Bảng 1, "Hướng dẫn điều trị Nhi khoa 2025" tr.148)', () => {
+  it('≤60 tháng dùng ngưỡng +2SD/+3SD (giống WFH)', () => {
+    expect(classifyBfaZ(2.0, 24)).toBe('Bình thường');
+    expect(classifyBfaZ(2.01, 24)).toBe('Thừa cân');
+    expect(classifyBfaZ(3.0, 24)).toBe('Thừa cân');
+    expect(classifyBfaZ(3.01, 24)).toBe('Béo phì');
+  });
+  it('tháng 60 chẵn vẫn dùng ngưỡng chặt +2SD/+3SD — mốc là "<= 60", không phải "< 60" (Bugs.md #6, phải khớp wfh-lms.service.ts)', () => {
+    expect(classifyBfaZ(2.0, 60)).toBe('Bình thường');
+    expect(classifyBfaZ(2.01, 60)).toBe('Thừa cân');
+  });
+  it('>60 tháng dùng ngưỡng +1SD/+2SD (WHO 2007) — lỏng hơn hẳn ≤60 tháng', () => {
+    expect(classifyBfaZ(1.0, 61)).toBe('Bình thường');
+    expect(classifyBfaZ(1.01, 61)).toBe('Thừa cân');
+    expect(classifyBfaZ(2.0, 61)).toBe('Thừa cân');
+    expect(classifyBfaZ(2.01, 61)).toBe('Béo phì');
+  });
+  it('đầu dưới dùng chung ngưỡng -2SD/-3SD ở mọi tuổi, nhãn giống wfh', () => {
+    expect(classifyBfaZ(-2.01, 24)).toBe('Suy dinh dưỡng cấp');
+    expect(classifyBfaZ(-3.01, 120)).toBe('SDD cấp nặng');
   });
 });

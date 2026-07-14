@@ -10,6 +10,12 @@ const STATUS_BADGE_CLASS: Record<string, string> = {
   'Suy dinh dưỡng cấp': 'badge-danger',
   'SDD cấp nặng': 'badge-danger',
   'Không áp dụng (>5 Tuổi)': 'badge-info',
+  // BFA (BMI-for-age) falls back to this exact string, not the ">5 Tuổi" one
+  // above — BFA covers 0-228 tháng, its "N/A" reason is a data gap, not age.
+  // Missing from this map, it used to fall through classifyBadgeClass's
+  // .includes() heuristics below and render as a misleading green "normal"
+  // badge instead of the neutral info one — see Bugs.md #8.
+  'Không áp dụng': 'badge-info',
 };
 
 /** Same classification → badge-color mapping used throughout legacy/index.html. */

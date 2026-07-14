@@ -461,8 +461,8 @@ export function InputTab() {
             <LabField label="Hemoglobin Hb (g/L)" hint="Ngưỡng thiếu máu theo tuổi" placeholder="BT: 110–160" value={form.labs.hb} onChange={(v) => updateLab('hb', v)} />
             <LabField label="Sắt huyết thanh (µmol/L)" hint="Bình thường: 11.0 – 27.0 µmol/L" placeholder="BT: 11–27" value={form.labs.fe} onChange={(v) => updateLab('fe', v)} />
             <LabField label="Ferritin (ng/mL)" hint="Trẻ ≤5t: <12 | Trẻ >5t: <15" placeholder="BT: >12" value={form.labs.ferritin} onChange={(v) => updateLab('ferritin', v)} />
-            <LabField label="Cholesterol toàn phần (mg/dL)" hint="Tăng: ≥200 mg/dL" placeholder="BT: <170" value={form.labs.chol} onChange={(v) => updateLab('chol', v)} />
-            <LabField label="Triglycerid (mg/dL)" hint="Trẻ <10t: <100 | Trẻ ≥10t: <130" placeholder="BT: <100" value={form.labs.tg} onChange={(v) => updateLab('tg', v)} />
+            <LabField label="Cholesterol toàn phần (mmol/L)" hint="Ranh giới: ≥4.4 | Tăng: ≥5.2 mmol/L" placeholder="BT: <4.4" value={form.labs.chol} onChange={(v) => updateLab('chol', v)} />
+            <LabField label="Triglycerid (mmol/L)" hint="Trẻ <10t: <1.13 | Trẻ ≥10t: <1.47 mmol/L" placeholder="BT: <1.13" value={form.labs.tg} onChange={(v) => updateLab('tg', v)} />
           </div>
         </Card>
 

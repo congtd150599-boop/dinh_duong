@@ -36,6 +36,14 @@ const SOURCES = {
     github: 'https://raw.githubusercontent.com/WorldHealthOrganization/anthroplus/main/data-raw/growthstandards/hfawho2007.txt',
     jsdelivr: 'https://cdn.jsdelivr.net/gh/WorldHealthOrganization/anthroplus@main/data-raw/growthstandards/hfawho2007.txt',
   },
+  bmianthro: {
+    github: 'https://raw.githubusercontent.com/WorldHealthOrganization/anthro/master/data-raw/growthstandards/bmianthro.txt',
+    jsdelivr: 'https://cdn.jsdelivr.net/gh/WorldHealthOrganization/anthro@master/data-raw/growthstandards/bmianthro.txt',
+  },
+  bfawho2007: {
+    github: 'https://raw.githubusercontent.com/WorldHealthOrganization/anthroplus/main/data-raw/growthstandards/bfawho2007.txt',
+    jsdelivr: 'https://cdn.jsdelivr.net/gh/WorldHealthOrganization/anthroplus@main/data-raw/growthstandards/bfawho2007.txt',
+  },
 };
 
 async function fetchText(urls, attempts = 6, delayMs = 8000) {
@@ -64,9 +72,9 @@ const round1 = (n) => Math.round(n * 10) / 10;
 
 async function main() {
   console.log('Fetching WHO source files...');
-  const [weiText, lenText, wflText, wfhText, hfa2007Text] = await Promise.all(
-    [SOURCES.weianthro, SOURCES.lenanthro, SOURCES.wflanthro, SOURCES.wfhanthro, SOURCES.hfawho2007].map((s) =>
-      fetchText([s.github, s.jsdelivr]),
+  const [weiText, lenText, wflText, wfhText, hfa2007Text, bmiText, bfa2007Text] = await Promise.all(
+    [SOURCES.weianthro, SOURCES.lenanthro, SOURCES.wflanthro, SOURCES.wfhanthro, SOURCES.hfawho2007, SOURCES.bmianthro, SOURCES.bfawho2007].map(
+      (s) => fetchText([s.github, s.jsdelivr]),
     ),
   );
 
@@ -75,6 +83,8 @@ async function main() {
   const wflanthro = parseTable(wflText);
   const wfhanthro = parseTable(wfhText);
   const hfawho2007 = parseTable(hfa2007Text);
+  const bmianthro = parseTable(bmiText);
+  const bfawho2007 = parseTable(bfa2007Text);
 
   // --- WFA + HFA, 0-60 months (day-resolution source -> integer-month rows) ---
   const weiByKey = new Map(weianthro.map((r) => [`${r.sex}_${r.age}`, r]));
@@ -133,6 +143,37 @@ async function main() {
 
   if (growthRows.length !== 580) throw new Error(`Expected 580 WFA+HFA rows, got ${growthRows.length}`);
 
+  // --- BFA (BMI-for-age), 0-228 months — same day-floor/stitch pattern as HFA
+  // above. This is the indicator WHO/Bo Y Te mandate for overweight/obesity
+  // classification from age 5 onward (Bang 1, "Huong dan dieu tri Nhi khoa
+  // Phan Ngoai Tru 2025", tr.148) — the app never had it before (see Bugs.md
+  // #1), and used a flat adult BMI>=25 cutoff instead.
+  const bmiByKey = new Map(bmianthro.map((r) => [`${r.sex}_${r.age}`, r]));
+  const bfaRows = [];
+  for (const sex of [1, 2]) {
+    for (let month = 0; month <= 60; month++) {
+      const day = Math.floor(month * 30.4375);
+      const b = bmiByKey.get(`${sex}_${day}`);
+      if (!b) throw new Error(`Missing day ${day} for sex ${sex} in bmianthro`);
+      bfaRows.push({
+        gender: SEX_TO_GENDER[sex],
+        months: month,
+        l: Number(b.l),
+        m: Number(b.m),
+        s: Number(b.s),
+      });
+    }
+  }
+  const bfa2007ByKey = new Map(bfawho2007.map((r) => [`${r.sex}_${r.age}`, r]));
+  for (const sex of [1, 2]) {
+    for (let month = 61; month <= 228; month++) {
+      const row = bfa2007ByKey.get(`${sex}_${month}`);
+      if (!row) throw new Error(`Missing month ${month} for sex ${sex} in bfawho2007`);
+      bfaRows.push({ gender: SEX_TO_GENDER[sex], months: month, l: Number(row.l), m: Number(row.m), s: Number(row.s) });
+    }
+  }
+  if (bfaRows.length !== 458) throw new Error(`Expected 458 BFA rows, got ${bfaRows.length}`);
+
   // --- WFH, 0-60 months, height/length-indexed (native resolution, no month axis) ---
   const wfhRows = [];
   for (const row of wflanthro) {
@@ -144,7 +185,8 @@ async function main() {
 
   writeGrowthStandardsFiles(growthRows);
   writeWfhLmsFile(wfhRows);
-  console.log(`Wrote ${growthRows.length} WFA+HFA rows and ${wfhRows.length} WFH rows.`);
+  writeBfaLmsFile(bfaRows);
+  console.log(`Wrote ${growthRows.length} WFA+HFA rows, ${wfhRows.length} WFH rows, and ${bfaRows.length} BFA rows.`);
 }
 
 function writeGrowthStandardsFiles(rows) {
@@ -244,6 +286,44 @@ ${tsRows}
 export const WFH_LMS_DEFAULT = rawWfhLmsData as WfhLmsPoint[];
 `;
   fs.writeFileSync(path.join(DATA_DIR, 'wfh-lms-who-default.ts'), ts);
+}
+
+function writeBfaLmsFile(rows) {
+  const tsRows = rows.map((r) => `  { gender: '${r.gender}', months: ${r.months}, l: ${r.l}, m: ${r.m}, s: ${r.s} },`).join('\n');
+
+  const ts = `// Bundled WHO BMI-for-age (BFA) LMS reference data — the indicator WHO and
+// Vietnam's Bo Y Te (Huong dan dieu tri Nhi khoa Phan Ngoai Tru 2025, Bang 1,
+// tr.148) mandate for overweight/obesity classification, especially past 60
+// months where WFH is not published. Previously this app used a flat adult
+// BMI>=25 cutoff instead of an age-adjusted Z-score — see Bugs.md #1 for the
+// full writeup of why that was wrong and what this replaces.
+//
+// Age-indexed like WFA/HFA (not measured-value-indexed like WFH), but kept as
+// bundled-only data like wfh-lms-who-default.ts rather than folded into the
+// admin-editable "Chuan Tang Truong" CSV table — narrower blast radius for a
+// bug fix, consistent with how WFH was added.
+//
+// Source: official WHO data —
+//   - 0-60 months: WHO Child Growth Standards 2006 (day-resolution, same
+//     floor(month*30.4375) stitch as WFA/HFA)
+//     https://github.com/WorldHealthOrganization/anthro/blob/master/data-raw/growthstandards/bmianthro.txt
+//   - 61-228 months: WHO Growth Reference 2007
+//     https://github.com/WorldHealthOrganization/anthroplus/blob/main/data-raw/growthstandards/bfawho2007.txt
+//
+// Regenerated via backend/scripts/generate-lms-growth-data.mjs.
+export interface BfaLmsPoint {
+  gender: 'Nam' | 'Nữ';
+  months: number;
+  l: number;
+  m: number;
+  s: number;
+}
+
+export const BFA_LMS_DEFAULT: BfaLmsPoint[] = [
+${tsRows}
+];
+`;
+  fs.writeFileSync(path.join(DATA_DIR, 'bfa-lms-who-default.ts'), ts);
 }
 
 main().catch((err) => {

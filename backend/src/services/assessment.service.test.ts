@@ -50,9 +50,9 @@ describe('runAssessment — overweight/obesity via WFH (m=24, boy, median height
     height: 87.8,
   });
 
-  it('wfh classifies as Béo phì, wfa as Thừa cân, hfa stays normal', () => {
+  it('wfh classifies as Béo phì; wfa stays Bình thường (WFA has no "Thừa cân" category, see Bugs.md #4); hfa stays normal', () => {
     expect(result.wfh).toBe('Béo phì');
-    expect(result.wfa).toBe('Thừa cân');
+    expect(result.wfa).toBe('Bình thường');
     expect(result.hfa).toBe('Bình thường');
   });
   it('statusKey becomes Thừa cân/Béo phì, triggering the -20% energy reduction', () => {
@@ -149,6 +149,57 @@ describe('runAssessment — m=60 vs m=61 boundary (WFA/WFH become N/A beyond 5y)
     expect(result.wfa).toBe('Không áp dụng (>5 Tuổi)');
     expect(result.wfh).toBe('Không áp dụng (>5 Tuổi)');
     expect(result.hfa).toBe('Bình thường');
+  });
+});
+
+describe('runAssessment — overweight/obesity via BFA past 60 months (Bugs.md #1 — replaces the old flat bmi>=25 adult cutoff)', () => {
+  // m=84 (7y), Nam, height=121.7 (HFA median, so hfa stays Bình thường — isolates BFA).
+  it('weight=27 (bfaZ≈1.63, >+1SD but not yet >+2SD) → Thừa cân, statusKey Thừa cân/Béo phì', () => {
+    const result = runAssessment({ ...baseInput, examDate: '2031-01-01', gender: 'Nam', weight: 27, height: 121.7 });
+    expect(result.months).toBe(84);
+    expect(result.wfa).toBe('Không áp dụng (>5 Tuổi)');
+    expect(result.wfh).toBe('Không áp dụng (>5 Tuổi)');
+    expect(result.bfaZ).toBeGreaterThan(1);
+    expect(result.bfaZ).toBeLessThan(2);
+    expect(result.bfa).toBe('Thừa cân');
+    expect(result.statusKey).toBe('Thừa cân/Béo phì');
+    expect(result.targetEnergy).toBe(Math.round(result.stdEnergy * 0.8));
+  });
+  it('weight=30 (bfaZ≈2.52, >+2SD) → Béo phì', () => {
+    const result = runAssessment({ ...baseInput, examDate: '2031-01-01', gender: 'Nam', weight: 30, height: 121.7 });
+    expect(result.bfaZ).toBeGreaterThan(2);
+    expect(result.bfa).toBe('Béo phì');
+    expect(result.statusKey).toBe('Thừa cân/Béo phì');
+  });
+  it('weight=18.78 (bfaZ≈-2.5, wasted) → statusKey Suy dinh dưỡng, catch-up energy (stdEnergy+300) — previously undetectable past 5y since wfaZ/wfhZ are always null there', () => {
+    const result = runAssessment({ ...baseInput, examDate: '2031-01-01', gender: 'Nam', weight: 18.78, height: 121.7 });
+    expect(result.bfaZ).toBeLessThan(-2);
+    expect(result.statusKey).toBe('Suy dinh dưỡng');
+    expect(result.targetEnergy).toBe(result.stdEnergy + 300);
+    expect(result.energyNoteType).toBe('danger');
+  });
+});
+
+describe('runAssessment — moderate stunting now flags Suy dinh dưỡng regardless of age (Bugs.md #2)', () => {
+  it('m=24, hfaZ≈-2.49 (moderate, NOT <-3 severe), wfaZ/wfhZ both normal → statusKey Suy dinh dưỡng (previously only >60 tháng or hfaZ<-3 triggered this)', () => {
+    const result = runAssessment({ ...baseInput, examDate: '2026-01-01', gender: 'Nam', weight: 10.6161, height: 80.2 });
+    expect(result.hfaZ).toBeLessThan(-2);
+    expect(result.hfaZ).toBeGreaterThan(-3);
+    expect(result.hfa).toBe('Thấp còi');
+    expect(result.wfaZ).toBeGreaterThan(-2);
+    expect(result.wfhZ).toBeCloseTo(0, 1);
+    expect(result.statusKey).toBe('Suy dinh dưỡng');
+  });
+});
+
+describe('runAssessment — wfaZ<-2 still flags Suy dinh dưỡng when wfhZ is null (height outside the WHO WFH table range) (Bugs.md #3)', () => {
+  it('m=24, height=125cm (above the 65-120cm WFH table max → wfhZ null), weight=8 (wfaZ≈-3.63) → statusKey Suy dinh dưỡng, not Bình thường', () => {
+    const result = runAssessment({ ...baseInput, examDate: '2026-01-01', gender: 'Nam', weight: 8, height: 125 });
+    expect(result.wfhZ).toBeNull();
+    expect(result.wfh).toBe('Không áp dụng (chiều cao ngoài bảng chuẩn)');
+    expect(result.wfaZ).toBeLessThan(-2);
+    expect(result.hfaZ).toBeGreaterThan(2); // very tall-for-age, NOT stunted — isolates the wfaZ path from the hfaZ branch
+    expect(result.statusKey).toBe('Suy dinh dưỡng');
   });
 });
 

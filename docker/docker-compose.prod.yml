@@ -49,6 +49,23 @@ services:
     depends_on:
       - backend
 
+  # Public exposure via Cloudflare Tunnel — outbound-only connection to
+  # Cloudflare's edge, no open inbound port/public IP needed on this host.
+  # The tunnel itself (which hostname maps to which local service) is
+  # configured in the Cloudflare Zero Trust dashboard, not here — this
+  # container just authenticates with CLOUDFLARE_TUNNEL_TOKEN (.env) and
+  # relays traffic to `frontend:80` per that dashboard config. Reaches
+  # `frontend` by Docker service-name DNS, same as frontend's own nginx.conf
+  # reaches `backend:4000` — no host networking needed.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - frontend
+
 volumes:
   pgdata_prod:
   backups:

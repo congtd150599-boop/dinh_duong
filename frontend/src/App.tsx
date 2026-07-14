@@ -4,6 +4,7 @@ import { RegisterPage } from './components/auth/RegisterPage';
 import { FoodsTab } from './components/foods/FoodsTab';
 import { GrowthStandardsTab } from './components/growthStandards/GrowthStandardsTab';
 import { InputTab } from './components/input/InputTab';
+import { LabReferencesTab } from './components/labReferences/LabReferencesTab';
 import { AppHeader } from './components/layout/AppHeader';
 import { Sidebar } from './components/layout/Sidebar';
 import { LogTab } from './components/log/LogTab';
@@ -45,6 +46,7 @@ export default function App() {
           {activeTab === 'result' && <ResultTab />}
           {activeTab === 'log' && <LogTab />}
           {activeTab === 'growthStandards' && <GrowthStandardsTab />}
+          {activeTab === 'labReferences' && <LabReferencesTab />}
           {activeTab === 'foods' && <FoodsTab />}
           {activeTab === 'reports' && <ClinicStatsTab />}
           {activeTab === 'users' && user.role === 'admin' && <UsersTab />}

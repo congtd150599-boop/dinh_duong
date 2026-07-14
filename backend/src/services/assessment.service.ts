@@ -4,6 +4,7 @@ import { assessLabs } from './lab-assessment.service';
 import { generateOptimizedMenu } from './menu-optimizer.service';
 import { getHfaLms, getHfaMedian, getWfaLms, getWfaMedian } from './growth-standards.service';
 import { getWfhLms } from './wfh-lms.service';
+import { getBfaLms } from './bfa-lms.service';
 import { computeZScores } from './z-score.service';
 
 /**
@@ -17,14 +18,22 @@ export function runAssessment(input: AssessmentInput): AssessmentResult {
   const whoWeight = getWfaMedian(input.gender, months);
   const whoHeight = getHfaMedian(input.gender, months);
 
-  const bmi = parseFloat((input.weight / (input.height / 100) ** 2).toFixed(1));
+  const bmiRaw = input.weight / (input.height / 100) ** 2;
+  const bmi = parseFloat(bmiRaw.toFixed(1));
 
-  const { wfaZ, wfhZ, hfaZ, wfa, hfa, wfh } = computeZScores({
+  const { wfaZ, wfhZ, hfaZ, bfaZ, wfa, hfa, wfh, bfa } = computeZScores({
     weight: input.weight,
     height: input.height,
+    // bmiRaw, not the display-rounded `bmi` — Bugs.md #7: rounding to 1
+    // decimal before the LMS formula could flip a classification right at a
+    // razor-thin SD boundary (the code elsewhere distinguishes z=2.00 from
+    // z=2.01), which display rounding should never be able to do.
+    bmi: bmiRaw,
+    months,
     wfaLms: getWfaLms(input.gender, months),
     hfaLms: getHfaLms(input.gender, months),
     wfhLms: getWfhLms(input.gender, months, input.height),
+    bfaLms: getBfaLms(input.gender, months),
   });
 
   let muacStatus: string | null = null;
@@ -34,10 +43,21 @@ export function runAssessment(input: AssessmentInput): AssessmentResult {
     else muacStatus = 'Bình thường (≥12.5cm)';
   }
 
+  // <5 tuổi: wfhZ và bfaZ dùng chung ngưỡng +2SD/+3SD (WHO coi CN/CC và
+  // BMI/tuổi tương đương ở tuổi này — Bảng 1), OR cả 2 luôn an toàn. ≥5 tuổi:
+  // wfhZ/wfaZ luôn null (WHO không công bố quá 5 tuổi) nên chỉ còn bfaZ, với
+  // ngưỡng lỏng hơn +1SD/+2SD (WHO 2007). Trước đây dùng "bmi >= 25" (ngưỡng
+  // người lớn) cho mọi tuổi — xem Bugs.md #1 ("Hướng dẫn điều trị Nhi khoa
+  // 2025" tr.148).
+  const overweightSd = months <= 60 ? 2 : 1;
+  const isWasted = (wfhZ !== null && wfhZ < -2) || (wfaZ !== null && wfaZ < -2) || (bfaZ !== null && bfaZ < -2);
+  const isOverweight = (wfhZ !== null && wfhZ > 2) || (bfaZ !== null && bfaZ > overweightSd);
+  // Thấp còi (hfaZ<-2) — ngưỡng đồng nhất theo mọi lứa tuổi (Bảng 1), không
+  // còn phân biệt <-3 cho ≤60 tháng / <-2 cho >60 tháng như trước (Bugs.md #2).
   let statusKey = 'Bình thường';
-  if (wfhZ !== null && (wfhZ < -2 || (wfaZ !== null && wfaZ < -2))) statusKey = 'Suy dinh dưỡng';
-  else if (hfaZ < -3 || (months > 60 && hfaZ < -2)) statusKey = 'Suy dinh dưỡng';
-  else if (bmi >= 25 || (wfhZ !== null && wfhZ > 2) || (wfaZ !== null && wfaZ > 2)) statusKey = 'Thừa cân/Béo phì';
+  if (isWasted) statusKey = 'Suy dinh dưỡng';
+  else if (hfaZ < -2) statusKey = 'Suy dinh dưỡng';
+  else if (isOverweight) statusKey = 'Thừa cân/Béo phì';
 
   const { stdEnergy, targetEnergy, energyNote, energyNoteType, energyNoteIcon } = calcEnergy(
     months,
@@ -45,12 +65,12 @@ export function runAssessment(input: AssessmentInput): AssessmentResult {
     input.weight,
     wfaZ,
     wfhZ,
-    bmi,
+    bfaZ,
   );
 
   const { carbG, proteinG, lipidG } = calcMacros(targetEnergy, statusKey);
 
-  const labs = assessLabs(months, input.labs);
+  const labs = assessLabs(months, input.gender, input.labs);
 
   const menu = generateOptimizedMenu({
     months,
@@ -77,9 +97,11 @@ export function runAssessment(input: AssessmentInput): AssessmentResult {
     wfa,
     hfa,
     wfh,
+    bfa,
     wfaZ,
     hfaZ,
     wfhZ,
+    bfaZ,
     muacStatus,
     stdEnergy,
     targetEnergy,

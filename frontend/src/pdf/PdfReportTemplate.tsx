@@ -13,7 +13,10 @@ const MEAL_TIMES: Record<MealSlot, string> = {
 
 function badgeCls(s: string): string {
   if (s.includes('nặng') || s.includes('SDD')) return 'pdf-badge-bad';
-  if (s.includes('cân') || s.includes('còi') || s.includes('Thừa') || s.includes('Béo')) return 'pdf-badge-warn';
+  // 'dưỡng' catches 'Suy dinh dưỡng cấp' (BFA/wasting label) — it contains
+  // none of the other warn keywords below and used to silently fall through
+  // to pdf-badge-ok (green) for what is a malnutrition flag, see Bugs.md #9.
+  if (s.includes('cân') || s.includes('còi') || s.includes('Thừa') || s.includes('Béo') || s.includes('dưỡng')) return 'pdf-badge-warn';
   return 'pdf-badge-ok';
 }
 
@@ -117,12 +120,14 @@ export function PdfReportTemplate({ result: r }: { result: AssessmentResult }) {
               <span className={`pdf-badge ${badgeCls(r.hfa)}`}>{r.hfa}</span>
             </div>
           </div>
-          <div className={`pdf-stat-box ${r.bmi < 18.5 ? 'red' : r.bmi >= 25 ? 'orange' : 'teal'}`}>
-            <div className="pdf-stat-label">BMI</div>
+          {/* r.bfa (BMI-for-age, WHO) thay ngưỡng BMI người lớn (18.5/25/30) cố định
+              cũ — sai vì áp dụng cho trẻ em, xem Bugs.md #9. */}
+          <div className={`pdf-stat-box ${badgeCls(r.bfa) === 'pdf-badge-bad' ? 'red' : badgeCls(r.bfa) === 'pdf-badge-warn' ? 'orange' : 'teal'}`}>
+            <div className="pdf-stat-label">BMI/Tuổi</div>
             <div className="pdf-stat-value">
               {r.bmi} <span style={{ fontSize: 12 }}>kg/m²</span>
             </div>
-            <div className="pdf-stat-sub">{r.bmi < 18.5 ? 'Thấp hơn chuẩn' : r.bmi >= 30 ? 'Béo phì' : r.bmi >= 25 ? 'Thừa cân' : 'Bình thường'}</div>
+            <div className="pdf-stat-sub">{r.bfa}</div>
           </div>
           <div className={`pdf-stat-box ${r.wfhZ !== null && r.wfhZ < -2 ? 'red' : r.wfhZ !== null && r.wfhZ > 2 ? 'orange' : 'teal'}`}>
             <div className="pdf-stat-label">CN/Chiều cao</div>
@@ -197,15 +202,13 @@ export function PdfReportTemplate({ result: r }: { result: AssessmentResult }) {
             </tr>
             <tr>
               <td>
-                <strong>BMI</strong>
+                <strong>BMI/Tuổi</strong>
               </td>
               <td>{r.bmi} kg/m²</td>
-              <td>18.5 – 24.9</td>
+              <td>{r.bfaZ !== null ? `Z-score: ${r.bfaZ.toFixed(2)}` : '—'}</td>
               <td>—</td>
               <td>
-                <span className={`pdf-badge ${r.bmi < 18.5 ? 'pdf-badge-bad' : r.bmi >= 25 ? 'pdf-badge-warn' : 'pdf-badge-ok'}`}>
-                  {r.bmi < 18.5 ? 'Thấp' : r.bmi >= 30 ? 'Béo phì' : r.bmi >= 25 ? 'Thừa cân' : 'Bình thường'}
-                </span>
+                <span className={`pdf-badge ${badgeCls(r.bfa)}`}>{r.bfa}</span>
               </td>
             </tr>
             {r.muacStatus && (

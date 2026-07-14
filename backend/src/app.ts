@@ -9,6 +9,7 @@ import { buildAuthRouter } from './routes/auth.route';
 import { buildChildrenRouter } from './routes/children.route';
 import { buildFoodsRouter } from './routes/foods.route';
 import { buildGrowthStandardsRouter } from './routes/growth-standards.route';
+import { buildLabReferenceRouter } from './routes/lab-reference.route';
 import { buildPatientsRouter } from './routes/patients.route';
 import { buildReportsRouter } from './routes/reports.route';
 import { buildUsersRouter } from './routes/users.route';
@@ -37,6 +38,7 @@ export function createApp(prisma: PrismaClient): Express {
   app.use('/api/assessments', requireAuth, assessmentsRouter);
   app.use('/api/patients', requireAuth, buildPatientsRouter(prisma));
   app.use('/api/growth-standards', requireAuth, buildGrowthStandardsRouter(prisma));
+  app.use('/api/lab-references', requireAuth, buildLabReferenceRouter(prisma));
   app.use('/api/foods', requireAuth, buildFoodsRouter(prisma));
   app.use('/api/children', requireAuth, buildChildrenRouter(prisma));
   app.use('/api/reports', requireAuth, buildReportsRouter(prisma));

@@ -147,10 +147,15 @@ export function ResultTab() {
                   </td>
                 </tr>
                 <tr>
-                  <td>BMI</td>
-                  <td>{r.bmi} kg/m²</td>
+                  <td>BMI/Tuổi (WHO)</td>
                   <td>
-                    <StatusBadge status={r.bmi < 18.5 ? 'Nhẹ cân' : r.bmi >= 30 ? 'Béo phì' : r.bmi >= 25 ? 'Thừa cân' : 'Bình thường'} />
+                    {r.bmi} kg/m² {r.bfaZ !== null && `(Z-score: ${r.bfaZ.toFixed(2)})`}
+                  </td>
+                  <td>
+                    {/* Trước đây dùng ngưỡng BMI người lớn (18.5/25/30) cố định — sai vì áp
+                        dụng cho trẻ em, xem Bugs.md #1. Giờ dùng r.bfa (BMI-for-age Z-score
+                        theo WHO, ngưỡng lệch theo tuổi), do backend tính sẵn. */}
+                    <StatusBadge status={r.bfa} />
                   </td>
                 </tr>
                 {r.muacStatus && (
@@ -330,18 +335,40 @@ export function ResultTab() {
         </div>
         <div className="card-body">
           <div className="grid-2" style={{ gap: 12 }}>
-            <InfoBox tone={r.wfaZ !== null && r.wfaZ < -2 ? 'danger' : r.hfaZ < -3 ? 'danger' : r.wfhZ !== null && r.wfhZ > 2 ? 'warn' : 'success'}>
+            {/* r.wfaZ/r.wfhZ luôn null khi >60 tháng (WHO không công bố quá 5 tuổi) — thêm
+                r.bfaZ (BMI-for-age) để không im lặng bỏ sót trẻ >5 tuổi béo phì/suy dinh
+                dưỡng, xem Bugs.md #1. Ngưỡng thừa cân/béo phì của bfaZ lệch theo tuổi
+                (+2/+3SD từ 60 tháng trở xuống — trùng wfhZ nên OR luôn an toàn; +1/+2SD
+                sau 60 tháng — WHO 2007, xem Bảng 1 "Hướng dẫn điều trị Nhi khoa 2025"
+                tr.148). Mốc "≤60 tháng" (không phải "<60") khớp đúng ranh giới wfhZ đang
+                dùng (wfh-lms.service.ts: `months > 60` mới trả null) — xem Bugs.md #6.
+                wfhZ cũng được thêm vào cả 2 vế thiếu-cân/thừa-cân bên dưới — trước đây
+                khối này chỉ xét wfaZ/bfaZ, bỏ sót ca suy dinh dưỡng cấp chỉ có ở wfhZ dù
+                statusKey/badge CN/CC ngay bên dưới đã đúng — xem Bugs.md #5. */}
+            <InfoBox
+              tone={
+                (r.wfaZ !== null && r.wfaZ < -2) || (r.wfhZ !== null && r.wfhZ < -2) || (r.bfaZ !== null && r.bfaZ < -2)
+                  ? 'danger'
+                  : r.hfaZ < -2
+                    ? 'danger'
+                    : (r.wfhZ !== null && r.wfhZ > 2) || (r.bfaZ !== null && r.bfaZ > (r.months <= 60 ? 2 : 1))
+                      ? 'warn'
+                      : 'success'
+              }
+            >
               <strong>Tình trạng dinh dưỡng tổng thể:</strong>
               <br />
-              CN/Tuổi: {r.wfa} | CC/Tuổi: {r.hfa} | CN/CC: {r.wfh}.
+              CN/Tuổi: {r.wfa} | CC/Tuổi: {r.hfa} | CN/CC: {r.wfh} | BMI/Tuổi: {r.bfa}.
               <br />
-              {r.wfaZ !== null && r.wfaZ < -3
+              {(r.wfaZ !== null && r.wfaZ < -3) || (r.wfhZ !== null && r.wfhZ < -3) || (r.bfaZ !== null && r.bfaZ < -3)
                 ? 'Suy dinh dưỡng thể nhẹ cân nặng – cần can thiệp dinh dưỡng ngay.'
                 : r.hfaZ < -3
                   ? 'Thấp còi nặng – cần theo dõi và can thiệp dài hạn.'
-                  : r.wfhZ !== null && r.wfhZ > 3
-                    ? 'Béo phì – cần chế độ ăn và vận động kiểm soát.'
-                    : 'Theo dõi định kỳ 3 tháng/lần.'}
+                  : r.hfaZ < -2
+                    ? 'Thấp còi – cần bổ sung dinh dưỡng và theo dõi tăng trưởng.'
+                    : (r.wfhZ !== null && r.wfhZ > 3) || (r.bfaZ !== null && r.bfaZ > (r.months <= 60 ? 3 : 2))
+                      ? 'Béo phì – cần chế độ ăn và vận động kiểm soát.'
+                      : 'Theo dõi định kỳ 3 tháng/lần.'}
             </InfoBox>
             <InfoBox tone="info">
               <strong>Lịch theo dõi:</strong>

@@ -45,14 +45,25 @@ export function WhoComparePanel({ result }: { result: AssessmentResult | null })
             </div>
           </div>
           <div className="compare-row">
-            <div className="compare-label">BMI</div>
+            <div className="compare-label">BMI/Tuổi</div>
             <div className="compare-current">{result.bmi}</div>
             <div className="compare-unit">kg/m²</div>
             <div className="compare-arrow">→</div>
-            <div className="compare-target">CĐ: 18.5–24.9</div>
-            <div className={`compare-diff ${result.bmi < 18.5 ? 'diff-low' : result.bmi > 25 ? 'diff-high' : 'diff-ok'}`}>
-              {result.bmi < 18.5 ? 'Thấp' : result.bmi > 25 ? 'Cao' : '✓ OK'}
-            </div>
+            {/* result.bfaZ (BMI-for-age, WHO) thay ngưỡng BMI người lớn cố định
+                (18.5-24.9) cũ — sai vì áp dụng cho trẻ em, xem Bugs.md #9. */}
+            {result.bfaZ !== null ? (
+              <>
+                <div className="compare-target">CĐ: -2 đến +2 SD</div>
+                <div className={`compare-diff ${result.bfaZ < -2 ? 'diff-low' : result.bfaZ > 2 ? 'diff-high' : 'diff-ok'}`}>
+                  {result.bfaZ < -2 ? result.bfa : result.bfaZ > 2 ? result.bfa : '✓ OK'}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="compare-target">N/A</div>
+                <div className="compare-diff">-</div>
+              </>
+            )}
           </div>
         </>
       )}

@@ -20,6 +20,26 @@ export interface LabInputs {
   tg?: number | null;
 }
 
+/** The 8 lab tests assessLabs() can evaluate — keys into LabReferenceRange/LabInputs. */
+export type LabTestKey = 'ca' | 'vitD' | 'zn' | 'hb' | 'fe' | 'ferritin' | 'chol' | 'tg';
+
+/** Wire shape of one LabReferenceRange row, as returned by /api/lab-references. See
+ * backend/src/services/lab-assessment.service.ts for how the 4 threshold fields combine
+ * per test shape (one-sided, two-sided, or two-tier). */
+export interface LabReferenceRecord {
+  testKey: LabTestKey;
+  gender: 'Nam' | 'Nữ' | 'Cả hai';
+  minMonths: number;
+  maxMonths: number;
+  lowSevere: number | null;
+  lowDeficit: number | null;
+  highBorderline: number | null;
+  highExcess: number | null;
+  highInclusive: boolean;
+  unit: string;
+  source: string;
+}
+
 export interface LabResult {
   name: string;
   icon: string;
@@ -137,9 +157,12 @@ export interface AssessmentResult {
   wfa: string;
   hfa: string;
   wfh: string;
+  /** BMI-for-age (WHO), 0-19y — drives thừa cân/béo phì past 60 tháng where wfh/wfa aren't published. See Bugs.md #1. */
+  bfa: string;
   wfaZ: number | null;
   hfaZ: number;
   wfhZ: number | null;
+  bfaZ: number | null;
   muacStatus: string | null;
   stdEnergy: number;
   targetEnergy: number;

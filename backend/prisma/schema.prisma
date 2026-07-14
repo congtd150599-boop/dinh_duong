@@ -185,6 +185,40 @@ model GrowthStandardPoint {
   @@unique([gender, metric, months])
 }
 
+// Lab test reference-range lookup (Calci, Vitamin D, Kẽm, Hb, Sắt, Ferritin,
+// Cholesterol, Triglycerid), separated from code so a threshold can be tuned
+// per real lab-machine calibration or updated guidance without a deploy —
+// same rationale as GrowthStandardPoint. A bundled default (matching the
+// values previously hardcoded in lab-assessment.service.ts) seeds this table
+// on first run; importing a CSV replaces it wholesale. See Bugs.md for the
+// incident that prompted this (a real lab slip showed Sắt huyết thanh has a
+// gender-specific range and Cholesterol/Triglycerid are reported in mmol/L,
+// not the mg/dL the app previously assumed).
+model LabReferenceRange {
+  id     String @id @default(cuid())
+  testKey String // 'ca' | 'vitD' | 'zn' | 'hb' | 'fe' | 'ferritin' | 'chol' | 'tg'
+  gender String // 'Nam' | 'Nữ' | 'Cả hai' — 'Cả hai' matches a patient of either gender
+  minMonths Int // inclusive
+  maxMonths Int // inclusive
+  // All 4 nullable — which ones are set depends on the test's shape: a
+  // one-sided lower-bound test (Kẽm) only sets lowDeficit; a two-tier test
+  // (Vitamin D) sets lowSevere+lowDeficit; a two-sided test (Calci, Sắt) sets
+  // lowDeficit+highExcess; a two-tier upper test (Cholesterol) sets
+  // highBorderline+highExcess.
+  lowSevere      Float?
+  lowDeficit     Float?
+  highBorderline Float?
+  highExcess     Float?
+  // Whether the high-side comparisons use >= (Cholesterol/Triglycerid, per
+  // their original hardcoded logic) instead of the default > (Calci/Sắt).
+  highInclusive Boolean @default(false)
+  unit          String
+  source        String
+  importedAt    DateTime @default(now())
+
+  @@unique([testKey, gender, minMonths, maxMonths])
+}
+
 // Doctor-editable food reference list: nutrition figures, benefits, and
 // disease-contraindication tags. Also the live candidate pool for
 // menu-optimizer.service.ts's weekly-menu generation (see that file) —
@@ -235,7 +269,7 @@ model AuditLog {
   userName   String
   userEmail  String
   action     String // e.g. 'patient.create', 'user.reset_password' — free-form dot-namespaced, not a Postgres enum (same convention as other string-enum fields in this schema)
-  targetType String // 'Patient' | 'Guardian' | 'User' | 'Food' | 'GrowthStandardPoint'
+  targetType String // 'Patient' | 'Guardian' | 'User' | 'Food' | 'GrowthStandardPoint' | 'LabReferenceRange'
   targetId   String?
   summary    String // human-readable one-liner shown in the audit log UI, e.g. 'Xoá bệnh nhân "Nguyễn Văn A"'
 

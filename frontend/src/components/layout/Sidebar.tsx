@@ -8,6 +8,7 @@ const BASE_TABS: { id: TabName; label: string; icon: string }[] = [
   { id: 'result', label: 'Kết Quả', icon: '📊' },
   { id: 'log', label: 'Nhật Ký BN', icon: '📁' },
   { id: 'growthStandards', label: 'Chuẩn Tăng Trưởng', icon: '📐' },
+  { id: 'labReferences', label: 'Chuẩn Xét Nghiệm', icon: '🧪' },
   { id: 'foods', label: 'Danh Sách Thực Phẩm', icon: '🍎' },
   { id: 'reports', label: 'Báo Cáo Thống Kê', icon: '📈' },
 ];
